@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "802522991299",
+    "firebase_url": "https://mobilebunny-a46b2-default-rtdb.firebaseio.com",
+    "project_id": "mobilebunny-a46b2",
+    "storage_bucket": "mobilebunny-a46b2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:802522991299:android:b8e9c7bb945adfe860b076",
+        "android_client_info": {
+          "package_name": "com.example.mobile_bunny"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXxvsgztwLaVk3TmltNiCnkcOa5vbIuts"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

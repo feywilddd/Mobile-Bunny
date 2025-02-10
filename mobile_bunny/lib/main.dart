@@ -1,13 +1,29 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'counter_provider.dart';
+import 'firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'presentation/pages/home_page.dart';
 
-void main() {
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    // Load the .env file asynchronously
+    await dotenv.load(fileName: ".env");
+    print("✅ .env file loaded successfully!");
+
+    // Try accessing a variable to confirm it's loaded
+    print("API Key: ${dotenv.env['API_KEY']}");
+  } catch (e) {
+    print("❌ Error loading .env file: $e");
+  }
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -15,40 +31,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Riverpod Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const HomeScreen(),
-    );
-  }
-}
-
-class HomeScreen extends ConsumerWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Watch the counter state
-    final counter = ref.watch(counterProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Riverpod Counter App'),
-      ),
-      body: Center(
-        child: Text(
-          'Counter: $counter',
-          style: const TextStyle(fontSize: 24),
+    return ProviderScope(  // Wrap the entire app with ProviderScope
+      child: MaterialApp(
+        title: 'Bunny&Co',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Update the counter state
-          ref.read(counterProvider.notifier).state++;
-        },
-        child: const Icon(Icons.add),
+        home: HomePage(),
       ),
     );
   }

@@ -1,1 +1,62 @@
 .env
+.idea/caches/deviceStreaming.xml
+.idea/misc.xml
+.idea/Mobile-Bunny.iml
+.idea/modules.xml
+.idea/vcs.xml
+mobile_bunny/android/app/.cxx/Debug/1469666j/arm64-v8a/.cmake/api/v1/query/client-agp/cache-v2
+
+# Flutter/Dart/Pub related
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+build/
+
+# iOS
+ios/Flutter/.last_build_id
+ios/Flutter/Flutter.podspec
+ios/Pods/
+ios/Podfile.lock
+ios/Runner.xcworkspace/
+
+# Android
+.android/
+.gradle/
+local.properties
+**/local.properties
+*.iml
+
+# IntelliJ / Android Studio
+.idea/
+.vscode/
+
+# VS Code
+.vscode/
+
+# macOS
+macos/Flutter/Flutter.podspec
+macos/Pods/
+macos/Podfile.lock
+macos/.dart_tool/
+
+# Web
+web/.dart_tool/
+
+# Windows
+windows/.dart_tool/
+windows/build/
+
+# Linux
+linux/.dart_tool/
+
+# Any other files you want to exclude
+*.log
+*.bak
+*.swp
+
+# Generated files
+*.apk
+*.ipa
+*.app

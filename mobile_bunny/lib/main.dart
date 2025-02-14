@@ -1,20 +1,19 @@
+// lib/main.dart
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_options.dart';
 import 'presentation/pages/home_page.dart';
+import 'presentation/pages/login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // Load the .env file asynchronously
     await dotenv.load(fileName: ".env");
     print("✅ .env file loaded successfully!");
-
-    // Try accessing a variable to confirm it's loaded
-    print("API Key: ${dotenv.env['API_KEY']}");
   } catch (e) {
     print("❌ Error loading .env file: $e");
   }
@@ -31,13 +30,22 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ProviderScope(  // Wrap the entire app with ProviderScope
+    return ProviderScope(
       child: MaterialApp(
         title: 'Bunny&Co',
+        debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        home: HomePage(),
+        home: StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return snapshot.hasData ? const HomePage() : const LoginPage();
+          },
+        ),
       ),
     );
   }

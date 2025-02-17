@@ -100,7 +100,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   child: Column(
                     children: [
                       CachedNetworkImage(
-                        imageUrl: 'http://4.172.61.59/images/BunnyCOLogo.png',
+                        imageUrl:
+                            'http://4.172.227.199/image_hosting/uploads/BunnyCOLogo.png',
                         placeholder: (context, url) =>
                             const CircularProgressIndicator(),
                         errorWidget: (context, url, error) =>
@@ -127,6 +128,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                     contentPadding: const EdgeInsets.all(16),
                   ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Veuillez entrer une adresse email';
+                    }
+                    if (!value.contains('@')) {
+                      return 'Veuillez entrer une adresse email valide';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -157,6 +167,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       },
                     ),
                   ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Veuillez entrer un mot de passe';
+                    }
+                    if (value.length < 6) {
+                      return 'Le mot de passe doit contenir au moins 6 caractères';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 8),
                 Align(
@@ -173,23 +192,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        Color(0xFFDB816E), // Original background color
-                    foregroundColor:
-                        Colors.white, // Set the text color to white
+                    backgroundColor: const Color(0xFFDB816E),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(
-                          color: Color.fromARGB(255, 255, 255, 255))
+                      ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
                           'Se connecter',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                         ),
                 ),
@@ -251,8 +267,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       if (user != null) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content:
-                                Text('Successfully signed in with Google!'),
+                            content: Text('Connexion réussie avec Google !'),
                             backgroundColor: Colors.green,
                             behavior: SnackBarBehavior.floating,
                           ),
@@ -287,7 +302,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       CachedNetworkImage(
-                        imageUrl: 'http://4.172.61.59/images/google.png',
+                        imageUrl:
+                            'http://4.172.227.199/image_hosting/uploads/google.png',
                         height: 24,
                       ),
                       const SizedBox(width: 12),

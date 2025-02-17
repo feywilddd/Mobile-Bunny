@@ -42,17 +42,30 @@ class AuthNotifier extends StateNotifier<User?> {
 
   Future<void> signInWithEmail(String email, String password) async {
     try {
+      // Call Firebase Authentication to sign in
       await _firebaseAuth.signInWithEmailAndPassword(
-          email: email, password: password);
+        email: email,
+        password: password,
+      );
     } on FirebaseAuthException catch (e) {
+      // Handle specific FirebaseAuth errors
       if (e.code == 'user-not-found') {
         print('No user found for that email.');
+        throw FirebaseAuthException(
+            code: 'user-not-found', message: 'No user found for that email.');
       } else if (e.code == 'wrong-password') {
         print('Wrong password provided for that user.');
+        throw FirebaseAuthException(
+            code: 'wrong-password',
+            message: 'Wrong password provided for that user.');
+      } else {
+        // Re-throw other FirebaseAuth errors
+        throw e;
       }
     } catch (e) {
+      // Handle any other errors
       print('Error signing in with email: $e');
-      rethrow;
+      throw e;
     }
   }
 

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/firebase_providers.dart';
+import '../pages/login_page.dart';
 import '../pages/second_page.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/data_list.dart';
 
 class HomePage extends ConsumerWidget {
@@ -13,21 +15,36 @@ class HomePage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Home Page'),
+        title: const Text('Home Page'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              // Sign out the user
+              await ref.read(authProvider.notifier).signOut();
+
+              // Navigate back to the LoginPage after sign-out
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+              );
+            },
+          ),
+        ],
       ),
       body: dataAsyncValue.when(
         data: (data) => DataList(data: data),
-        loading: () => Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text('Error: $error')),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => SecondPage()),
+            MaterialPageRoute(builder: (context) => const SecondPage()),
           );
         },
-        child: Icon(Icons.navigate_next),
+        child: const Icon(Icons.navigate_next),
       ),
     );
   }

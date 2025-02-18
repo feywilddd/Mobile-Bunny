@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/firebase_providers.dart';
-import '../pages/login_page.dart'; // Import LoginPage
+import '../pages/login_page.dart';
 import '../pages/second_page.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/data_list.dart';

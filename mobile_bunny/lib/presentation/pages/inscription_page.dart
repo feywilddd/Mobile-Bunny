@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mobile_bunny/presentation/providers/auth_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:mobile_bunny/presentation/pages/home_page.dart'; // Import HomePage
-import 'package:mobile_bunny/presentation/pages/login_page.dart'; // Import LoginPage
+import 'package:mobile_bunny/presentation/pages/home_page.dart';
+import 'package:mobile_bunny/presentation/pages/login_page.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
   const SignupPage({Key? key}) : super(key: key);
@@ -30,6 +30,26 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     super.dispose();
   }
 
+  String _getAuthErrorMessage(Object error) {
+    if (error is FirebaseAuthException) {
+      switch (error.code) {
+        case 'invalid-email':
+          return 'L\'adresse e-mail n\'est pas valide';
+        case 'email-already-in-use':
+          return 'Cette adresse e-mail est déjà utilisée par un autre compte';
+        case 'weak-password':
+          return 'Le mot de passe doit contenir au moins 6 caractères';
+        case 'network-request-failed':
+          return 'Erreur de connexion réseau';
+        case 'too-many-requests':
+          return 'Trop de tentatives. Veuillez réessayer plus tard';
+        default:
+          return 'Une erreur s\'est produite lors de l\'inscription';
+      }
+    }
+    return 'Une erreur inattendue s\'est produite';
+  }
+
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       if (_passwordController.text != _confirmPasswordController.text) {
@@ -51,6 +71,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
           const SnackBar(content: Text('Inscription réussie !')),
         );
 
+        // Navigate to HomePage after successful signup
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -59,7 +80,11 @@ class _SignupPageState extends ConsumerState<SignupPage> {
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : $e')),
+          SnackBar(
+            content: Text(_getAuthErrorMessage(e)),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       } finally {
         setState(() => _isLoading = false);
@@ -82,7 +107,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 const SizedBox(height: 48),
                 Center(
                   child: CachedNetworkImage(
-                    imageUrl: 'http://4.172.61.59/images/BunnyCOLogo.png',
+                    imageUrl:
+                        'http://4.172.227.199/image_hosting/uploads/BunnyCOLogo.png',
                     placeholder: (context, url) =>
                         const CircularProgressIndicator(),
                     errorWidget: (context, url, error) =>
@@ -98,12 +124,20 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   decoration: InputDecoration(
                     hintText: 'aaaa@exemple.com',
                     hintStyle: TextStyle(color: Colors.grey[600]),
-                    border: InputBorder.none,
+                    filled: true,
+                    fillColor: Colors.grey[900],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                     contentPadding: const EdgeInsets.all(16),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Veuillez entrer une adresse email';
+                    }
+                    if (!value.contains('@')) {
+                      return 'Veuillez entrer une adresse email valide';
                     }
                     return null;
                   },
@@ -140,6 +174,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Veuillez entrer un mot de passe';
+                    }
+                    if (value.length < 6) {
+                      return 'Le mot de passe doit contenir au moins 6 caractères';
                     }
                     return null;
                   },
@@ -178,6 +215,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     if (value == null || value.isEmpty) {
                       return 'Veuillez confirmer le mot de passe';
                     }
+                    if (value != _passwordController.text) {
+                      return 'Les mots de passe ne correspondent pas';
+                    }
                     return null;
                   },
                 ),
@@ -185,7 +225,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE49B8D),
+                    backgroundColor: const Color(0xFFDB816E),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -198,6 +238,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                         ),
                 ),
@@ -208,7 +249,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     const Text(
                       'Déjà un compte ?',
                       style: TextStyle(color: Color(0xFFBDBDBD)),
-                    ),
+                    ), // Add this comma
                     TextButton(
                       onPressed: () {
                         Navigator.pushReplacement(

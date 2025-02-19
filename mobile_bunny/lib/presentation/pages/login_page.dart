@@ -277,7 +277,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const HomePage()),
+                              builder: (context) => const MenuPage()),
                         );
                       }
                     } catch (e) {

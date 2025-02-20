@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class ItemDetailBottomSheet extends StatefulWidget {
   final Map<String, dynamic> item;
 
-  const ItemDetailBottomSheet({Key? key, required this.item}) : super(key: key);
+  const ItemDetailBottomSheet({super.key, required this.item});
 
   @override
   _ItemDetailBottomSheetState createState() => _ItemDetailBottomSheetState();

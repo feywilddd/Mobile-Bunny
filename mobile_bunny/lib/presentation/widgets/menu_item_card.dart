@@ -16,9 +16,19 @@ class MenuItemCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            item.imageUrl.isNotEmpty
-                ? Image.network(item.imageUrl, height: 40) // Afficher l'image si disponible
-                : const Icon(Icons.fastfood, size: 40, color: Colors.white),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: item.imageUrl.isNotEmpty
+                  ? Image.network(
+                      item.imageUrl,
+                      height: 80,
+                      width: 160,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => 
+                          const Icon(Icons.broken_image, size: 40, color: Colors.white),
+                    )
+                  : const Icon(Icons.fastfood, size: 40, color: Colors.white),
+            ),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(

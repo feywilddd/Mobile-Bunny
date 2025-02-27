@@ -30,7 +30,7 @@ class CategoryPage extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  '123 Rue du Resto...', // Adresse tronquée
+                  '123 Rue du Resto...', 
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
                 const Text(

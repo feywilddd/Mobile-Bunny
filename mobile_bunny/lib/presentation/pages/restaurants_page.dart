@@ -15,7 +15,7 @@ class RestaurantsPage extends StatefulWidget {
 
 class _RestaurantsPage extends State<RestaurantsPage> {
   final mapController = MapController();
-  String? selectedRestaurantName;
+  String? selectedRestaurantId;
   List<Restaurant> restaurants = [];
   Location location = Location();
   latlong2.LatLng? userLocation;
@@ -91,9 +91,9 @@ class _RestaurantsPage extends State<RestaurantsPage> {
     final List<Restaurant> fetchedRestaurants = snapshot.docs.map((doc) {
       final data = doc.data() as Map<String, dynamic>;
       return Restaurant(
-        name: data['name'] ?? 'Unnamed Restaurant',
+        id: doc.id,
         address: data['address'] ?? 'No Address',
-        city: 'Joliette', // Assuming city is not stored in Firestore
+        city: 'Joliette',
         location: latlong2.LatLng(
           data['location'].latitude,
           data['location'].longitude,
@@ -119,18 +119,19 @@ class _RestaurantsPage extends State<RestaurantsPage> {
   }
 
   List<Restaurant> get sortedRestaurants {
-    if (selectedRestaurantName == null) return restaurants;
+    if (selectedRestaurantId == null) return restaurants;
 
     return [...restaurants]..sort((a, b) {
-        if (a.name == selectedRestaurantName) return -1;
-        if (b.name == selectedRestaurantName) return 1;
+        if (a.id == selectedRestaurantId) return -1;
+        if (b.id == selectedRestaurantId) return 1;
         return a.distance.compareTo(b.distance); // Secondary sort by distance
       });
   }
 
-  void selectRestaurant(String name) {
+  void selectRestaurant(String id) {
     setState(() {
-      selectedRestaurantName = name;
+      // Toggle selection: If already selected, deselect it; otherwise, select it
+      selectedRestaurantId = (selectedRestaurantId == id) ? null : id;
     });
   }
 
@@ -190,14 +191,14 @@ class _RestaurantsPage extends State<RestaurantsPage> {
                             height: 40,
                             child: GestureDetector(
                               onTap: () {
-                                selectRestaurant(restaurant.name);
+                                selectRestaurant(restaurant.id);
                                 // Optional: Animate to center on the selected marker
                                 mapController.move(restaurant.location,
                                     mapController.camera.zoom);
                               },
                               child: Icon(
                                 Icons.location_pin,
-                                color: restaurant.name == selectedRestaurantName
+                                color: restaurant.id == selectedRestaurantId
                                     ? Colors.amber // Highlight selected marker
                                     : Colors.red,
                                 size: 40,
@@ -233,103 +234,99 @@ class _RestaurantsPage extends State<RestaurantsPage> {
   }
 
   Widget _buildRestaurantCard(Restaurant restaurant) {
-    final isSelected = restaurant.name == selectedRestaurantName;
+    final isSelected = restaurant.id == selectedRestaurantId;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey[900], // Dark card background
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected ? Colors.amber : Colors.transparent,
-          width: 2,
+    return GestureDetector(
+      onTap: () => selectRestaurant(restaurant.id),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey[900], // Dark card background
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Colors.amber : Colors.transparent,
+            width: 2,
+          ),
         ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              restaurant.name,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: isSelected ? Colors.amber : Colors.white,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              restaurant.address,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[400],
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              restaurant.city,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[400],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(
-                  Icons.directions_walk,
-                  color: Colors.grey[400],
-                  size: 16,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _isLocationLoading 
-                      ? 'Calcul...' 
-                      : '${restaurant.distance.toStringAsFixed(1)} km',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[400],
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.access_time,
-                  color: Colors.grey[400],
-                  size: 16,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  "Ouvert jusqu'à ${restaurant.closingTime}",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[400],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                // Handle order here
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isSelected ? Colors.amber : const Color(0xFFDB816E),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 40),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                isSelected ? 'Sélectionné' : 'Commander ici',
-                style: const TextStyle(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Restaurant name/number removed as requested
+              Text(
+                restaurant.address,
+                style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[400],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                restaurant.city,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[400],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.directions_walk,
+                    color: Colors.grey[400],
+                    size: 16,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _isLocationLoading 
+                        ? 'Calcul...' 
+                        : '${restaurant.distance.toStringAsFixed(1)} km',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[400],
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.access_time,
+                    color: Colors.grey[400],
+                    size: 16,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    "Ouvert jusqu'à ${restaurant.closingTime}",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[400],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  // Handle order here
+                  selectRestaurant(restaurant.id); // Select restaurant when ordering
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isSelected ? Colors.amber : const Color(0xFFDB816E),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 40),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  isSelected ? 'Sélectionné' : 'Commander ici',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -337,7 +334,7 @@ class _RestaurantsPage extends State<RestaurantsPage> {
 }
 
 class Restaurant {
-  final String name;
+  final String id;
   final String address;
   final String city;
   double distance = 0.0;
@@ -345,7 +342,7 @@ class Restaurant {
   final latlong2.LatLng location;
 
   Restaurant({
-    required this.name,
+    required this.id,
     required this.address,
     required this.city,
     required this.location,

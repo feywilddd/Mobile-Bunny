@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mobile_bunny/presentation/providers/auth_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:mobile_bunny/presentation/pages/home_page.dart';
+import 'package:mobile_bunny/presentation/pages/home_menu_page.dart';
 import 'package:mobile_bunny/presentation/pages/login_page.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
@@ -75,7 +75,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const HomePage(),
+            builder: (context) => const MenuPage(),
           ),
         );
       } catch (e) {

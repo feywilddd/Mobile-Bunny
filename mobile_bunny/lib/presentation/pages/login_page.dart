@@ -4,7 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mobile_bunny/presentation/pages/home_menu_page.dart';
-import 'package:mobile_bunny/presentation/pages/home_page.dart';
+import 'package:mobile_bunny/presentation/pages/home_menu_page.dart';
 import 'package:mobile_bunny/presentation/pages/inscription_page.dart';
 import 'package:mobile_bunny/presentation/providers/auth_provider.dart';
 
@@ -273,7 +273,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             behavior: SnackBarBehavior.floating,
                           ),
                         );
-                        // Navigate to HomePage after successful sign-in
+                        // Navigate to MenuPage after successful sign-in
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(

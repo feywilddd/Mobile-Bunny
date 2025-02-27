@@ -11,35 +11,46 @@ class MenuItemCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.all(8),
       color: const Color(0xFF1C1C1C),
-      child: SizedBox(
+      child: Container(
         width: 150,
+        height: 220, 
+        padding: const EdgeInsets.all(8), 
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start, 
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: item.imageUrl.isNotEmpty
-                  ? Image.network(
-                      item.imageUrl,
-                      height: 80,
-                      width: 160,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => 
-                          const Icon(Icons.broken_image, size: 40, color: Colors.white),
-                    )
-                  : const Icon(Icons.fastfood, size: 40, color: Colors.white),
-            ),
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.only(top: 2.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: item.imageUrl.isNotEmpty
+                    ? Image.network(
+                        item.imageUrl,
+                        height: 60,
+                        width: 150,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.broken_image, size: 40, color: Colors.white),
+                      )
+                    : const Icon(Icons.fastfood, size: 40, color: Colors.white),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: Text(
                 item.name,
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
               ),
             ),
-            Text(
-              '${item.price.toStringAsFixed(2)} \$',
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 0.0),
+              child: Text(
+                '${item.price.toStringAsFixed(2)} \$',
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              ),
             ),
           ],
         ),

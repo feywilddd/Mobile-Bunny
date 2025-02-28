@@ -5,6 +5,7 @@ import '../pages/login_page.dart';
 import '../pages/category_menu_page.dart'; 
 import '../widgets/menu_item_card.dart'; 
 import '../pages/item_detail_bottom_sheet.dart';
+import '../pages/user_menu_page.dart';
 
 class MenuPage extends ConsumerWidget {
   const MenuPage({super.key});
@@ -37,9 +38,17 @@ class MenuPage extends ConsumerWidget {
           ],
         ),
         actions: [
-          const CircleAvatar(
-            backgroundColor: Color(0xFFE4DF96),
-            child: Text('CS'),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const UserMenuPage()),
+              );
+            },
+            child: const CircleAvatar(
+              backgroundColor: Color(0xFFE4DF96),
+              child: Text('CS'),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.logout),

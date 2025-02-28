@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../data/models/menu_item.dart';
 
 class ItemDetailBottomSheet extends StatefulWidget {
-  final Map<String, dynamic> item;
+  final MenuItem item;
 
   const ItemDetailBottomSheet({Key? key, required this.item}) : super(key: key);
 
@@ -15,11 +16,6 @@ class _ItemDetailBottomSheetState extends State<ItemDetailBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final String itemName = widget.item['name'] ?? 'Nom indisponible';
-    final String itemImage = widget.item['image'] ?? '';
-    final String itemDescription = widget.item['description'] ?? 'Aucune description disponible';
-    final double itemPrice = widget.item['price'] ?? 0.0;
-
     return Container(
       color: const Color(0xFF212529),
       padding: const EdgeInsets.all(16.0),
@@ -28,7 +24,7 @@ class _ItemDetailBottomSheetState extends State<ItemDetailBottomSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            itemName,
+            widget.item.name,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 10),
@@ -37,14 +33,14 @@ class _ItemDetailBottomSheetState extends State<ItemDetailBottomSheet> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${itemPrice.toStringAsFixed(2)} \$',
+                '${widget.item.price.toStringAsFixed(2)} \$',
                 style: const TextStyle(fontSize: 16, color: Colors.white),
               ),
               Row(
                 children: [
-                  Text(
+                  const Text(
                     'Favoris',
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(color: Colors.white, fontSize: 16),
                   ),
                   IconButton(
                     icon: Icon(
@@ -63,10 +59,10 @@ class _ItemDetailBottomSheetState extends State<ItemDetailBottomSheet> {
           ),
           const SizedBox(height: 20),
 
-          itemImage.isNotEmpty
+          widget.item.imageUrl.isNotEmpty
               ? Center(
                   child: Image.network(
-                    itemImage,
+                    widget.item.imageUrl,
                     height: 150,
                     fit: BoxFit.cover,
                   ),
@@ -77,7 +73,7 @@ class _ItemDetailBottomSheetState extends State<ItemDetailBottomSheet> {
           const SizedBox(height: 20),
 
           Text(
-            itemDescription,
+            widget.item.description,
             style: const TextStyle(fontSize: 14, color: Colors.grey),
           ),
           const SizedBox(height: 20),

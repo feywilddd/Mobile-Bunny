@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
-import 'presentation/pages/home_page.dart';
 import 'presentation/pages/login_page.dart';
+import 'presentation/pages/home_menu_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,9 +18,16 @@ void main() async {
     print("❌ Error loading .env file: $e");
   }
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+ // Initialize Firebase only once
+  if (Firebase.apps.isEmpty) {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } catch (e) {
+      print("❌ Firebase initialization failed: $e");
+    }
+  }
 
   runApp(const MyApp());
 }
@@ -43,7 +50,7 @@ class MyApp extends StatelessWidget {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
-            return snapshot.hasData ? const HomePage() : const LoginPage();
+            return snapshot.hasData ? const MenuPage() : const LoginPage();
           },
         ),
       ),

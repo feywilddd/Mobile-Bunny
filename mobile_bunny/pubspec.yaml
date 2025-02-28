@@ -37,6 +37,7 @@ dependencies:
   flutter_riverpod: ^2.4.9
   firebase_core: any
   firebase_database: ^11.3.2
+  cloud_firestore: ^5.6.4
   uuid: ^3.0.7
   flutter_dotenv: ^5.2.1
   firebase_auth: ^5.4.2

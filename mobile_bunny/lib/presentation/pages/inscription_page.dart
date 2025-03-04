@@ -7,7 +7,7 @@ import 'package:mobile_bunny/presentation/pages/home_menu_page.dart';
 import 'package:mobile_bunny/presentation/pages/login_page.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
-  const SignupPage({Key? key}) : super(key: key);
+  const SignupPage({super.key});
 
   @override
   _SignupPageState createState() => _SignupPageState();

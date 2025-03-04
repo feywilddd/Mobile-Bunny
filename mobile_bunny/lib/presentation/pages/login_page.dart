@@ -9,7 +9,7 @@ import 'package:mobile_bunny/presentation/pages/inscription_page.dart';
 import 'package:mobile_bunny/presentation/providers/auth_provider.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key});
 
   @override
   _LoginPageState createState() => _LoginPageState();

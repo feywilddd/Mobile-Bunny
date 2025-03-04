@@ -5,12 +5,41 @@ import '../providers/menu_provider.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import '../widgets/category_section.dart';
+import '../pages/restaurants_page.dart';
 
-class MenuPage extends ConsumerWidget {
+class MenuPage extends ConsumerStatefulWidget {
   const MenuPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MenuPage> createState() => _MenuPageState();
+}
+
+class _MenuPageState extends ConsumerState<MenuPage> {
+  int _selectedIndex = 1; // Start with Menu selected (index 1)
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0: // Restaurant
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const RestaurantsPage()),
+        );
+        break;
+      case 1: // Menu
+        // Already on menu page
+        break;
+      case 2: // Cart
+        // Add cart page navigation when implemented
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(authProvider);
     final menuAsyncValue = ref.watch(menuProvider);
 

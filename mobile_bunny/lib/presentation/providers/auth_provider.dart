@@ -36,7 +36,7 @@ class AuthNotifier extends StateNotifier<User?> {
       return userCredential.user;
     } catch (e) {
       print('Error during Google Sign-In: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -60,12 +60,12 @@ class AuthNotifier extends StateNotifier<User?> {
             message: 'Wrong password provided for that user.');
       } else {
         // Re-throw other FirebaseAuth errors
-        throw e;
+        rethrow;
       }
     } catch (e) {
       // Handle any other errors
       print('Error signing in with email: $e');
-      throw e;
+      rethrow;
     }
   }
 

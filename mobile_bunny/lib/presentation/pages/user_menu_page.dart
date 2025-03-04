@@ -6,6 +6,8 @@ import '../providers/auth_provider.dart';
 import '../pages/login_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../widgets/custom_app_bar.dart';
+import '../widgets/custom_bottom_nav_bar.dart';
 
 class UserMenuPage extends ConsumerStatefulWidget {
   const UserMenuPage({super.key});
@@ -121,57 +123,7 @@ class _UserMenuPageState extends ConsumerState<UserMenuPage> {
     final user = ref.watch(authProvider);
     
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: const Color(0xFF1C1C1C),
-        title: Row(
-          children: [
-            const Icon(Icons.location_on, color: Color.fromARGB(255, 220, 206, 206)),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '123 Rue du Resto...',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-                const Text(
-                  'Ouvert jusqu\'à 23 h',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: isLoading
-              ? const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE4DF96)),
-                )
-              : familyProfiles.isNotEmpty
-                  ? CircleAvatar(
-                      backgroundColor: const Color(0xFFE4DF96),
-                      child: Text(_getInitials(familyProfiles[0]['name'])),
-                    )
-                  : const CircleAvatar(
-                      backgroundColor: Color(0xFFE4DF96),
-                      child: Text('?'),
-                    ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await ref.read(authProvider.notifier).signOut();
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginPage()),
-              );
-            },
-          ),
-        ],
-      ),
+      appBar: const CustomAppBar(),
       backgroundColor: const Color(0xFF212529),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -193,16 +145,7 @@ class _UserMenuPageState extends ConsumerState<UserMenuPage> {
         backgroundColor: const Color(0xFFDB816E),
         child: const Icon(Icons.add),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: const Color(0xFF1C1C1C),
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.edit_location), label: 'Restaurant'),
-          BottomNavigationBarItem(icon: Icon(Icons.restaurant_menu), label: 'Menu'),
-          BottomNavigationBarItem(icon: Icon(Icons.shopping_basket), label: 'Panier'),
-        ],
-      ),
+      bottomNavigationBar: const CustomBottomNavigationBar(),
     );
   }
 

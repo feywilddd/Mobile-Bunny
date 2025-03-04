@@ -15,28 +15,6 @@ class MenuPage extends ConsumerStatefulWidget {
 }
 
 class _MenuPageState extends ConsumerState<MenuPage> {
-  int _selectedIndex = 1; // Start with Menu selected (index 1)
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    switch (index) {
-      case 0: // Restaurant
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const RestaurantsPage()),
-        );
-        break;
-      case 1: // Menu
-        // Already on menu page
-        break;
-      case 2: // Cart
-        // Add cart page navigation when implemented
-        break;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

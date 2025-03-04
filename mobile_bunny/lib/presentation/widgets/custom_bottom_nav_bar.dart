@@ -1,7 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_bunny/presentation/pages/restaurants_page.dart';
 
-class CustomBottomNavigationBar extends StatelessWidget {
+class CustomBottomNavigationBar extends StatefulWidget {
   const CustomBottomNavigationBar({super.key});
+
+  @override
+  _CustomBottomNavigationBarState createState() =>
+      _CustomBottomNavigationBarState();
+}
+
+class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
+  int _selectedIndex = 1; // Start with Menu selected (index 1)
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0: // Restaurant
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const RestaurantsPage()),
+        );
+        break;
+      case 1: // Menu
+        // Already on menu page
+        break;
+      case 2: // Cart
+        // Add cart page navigation when implemented
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,6 +42,8 @@ class CustomBottomNavigationBar extends StatelessWidget {
         backgroundColor: const Color(0xFF1C1C1C),
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.grey,
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.restaurant), label: 'Restaurant'),
           BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Menu'),

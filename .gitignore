@@ -105,6 +105,8 @@ unlinked_spec.ds
 **/ios/Flutter/flutter_export_environment.sh
 **/ios/ServiceDefinitions.json
 **/ios/Runner/GeneratedPluginRegistrant.*
+/mobile_bunny/ios/Flutter/Debug.xcconfig
+/mobile_bunny/ios/Flutter/Release.xcconfig
 
 # macOS
 **/Flutter/ephemeral/
@@ -112,6 +114,8 @@ unlinked_spec.ds
 **/macos/Flutter/GeneratedPluginRegistrant.swift
 **/macos/Flutter/ephemeral
 **/xcuserdata/
+/mobile_bunny/macos/Flutter/Flutter-Debug.xcconfig
+/mobile_bunny/macos/Flutter/Flutter-Release.xcconfig
 
 # Windows
 **/windows/flutter/ephemeral/
@@ -150,3 +154,9 @@ app.*.symbols
 
 # Environnement
 .env
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+/mobile_bunny/android/app/.cxx/Debug

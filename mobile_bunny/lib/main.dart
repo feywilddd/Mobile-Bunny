@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
+import 'presentation/pages/home_menu_page.dart';
 import 'presentation/pages/login_page.dart';
 import 'presentation/pages/home_menu_page.dart';
 
@@ -17,17 +18,11 @@ void main() async {
   } catch (e) {
     print("❌ Error loading .env file: $e");
   }
-
- // Initialize Firebase only once
-  if (Firebase.apps.isEmpty) {
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    } catch (e) {
-      print("❌ Firebase initialization failed: $e");
-    }
-  }
+  
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+    name: 'name-here',
+  );
 
   runApp(const MyApp());
 }

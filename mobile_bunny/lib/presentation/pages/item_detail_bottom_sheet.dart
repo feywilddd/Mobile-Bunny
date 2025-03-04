@@ -4,7 +4,7 @@ import '../../data/models/menu_item.dart';
 class ItemDetailBottomSheet extends StatefulWidget {
   final MenuItem item;
 
-  const ItemDetailBottomSheet({Key? key, required this.item}) : super(key: key);
+  const ItemDetailBottomSheet({super.key, required this.item});
 
   @override
   _ItemDetailBottomSheetState createState() => _ItemDetailBottomSheetState();

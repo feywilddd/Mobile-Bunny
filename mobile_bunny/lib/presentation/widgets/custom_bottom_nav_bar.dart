@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_bunny/presentation/pages/restaurants_page.dart';
+import 'package:mobile_bunny/presentation/pages/home_menu_page.dart';
 
 class CustomBottomNavigationBar extends StatefulWidget {
   const CustomBottomNavigationBar({super.key});
@@ -25,7 +26,10 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
         );
         break;
       case 1: // Menu
-        // Already on menu page
+         Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MenuPage()),
+        );
         break;
       case 2: // Cart
         // Add cart page navigation when implemented

@@ -12,6 +12,9 @@ class ProfileFilterList extends ConsumerWidget {
     final profileState = ref.watch(profileProvider);
     final profileFilters = ref.watch(profileFilterProvider);
     
+    // Debug print to verify what profiles and filters we have
+    print("ProfileFilterList.build - profiles: ${profileState.profiles.length}, filters: $profileFilters");
+    
     if (profileState.profiles.isEmpty) {
       return const Card(
         color: Color(0xFF1C1C1C),
@@ -32,7 +35,10 @@ class ProfileFilterList extends ConsumerWidget {
         itemCount: profileState.profiles.length,
         itemBuilder: (context, index) {
           final profile = profileState.profiles[index];
-          final isEnabled = profileFilters[profile.id] ?? true;
+          // Critical check here - get the filter value with bracket notation
+          final bool isEnabled = profileFilters[profile.id] ?? true;
+          
+          print("ProfileFilterList - profile: ${profile.id}, isEnabled: $isEnabled");
           
           return _buildProfileCard(context, ref, profile, isEnabled);
         },
@@ -146,8 +152,14 @@ class ProfileFilterList extends ConsumerWidget {
   }
   
   void _updateProfileFilter(BuildContext context, WidgetRef ref, Profile profile, bool value) {
-    // Update the profile filters map
+    print("_updateProfileFilter called with profile: ${profile.id}, value: $value");
+    
+    // Update the profile filters map with explicit id
     ref.read(profileFilterProvider.notifier).toggleProfileFilter(profile.id, value);
+    
+    // Print the current state for debugging
+    final currentState = ref.read(profileFilterProvider);
+    print("Current filter state after update: $currentState");
     
     // Show feedback
     ScaffoldMessenger.of(context).showSnackBar(

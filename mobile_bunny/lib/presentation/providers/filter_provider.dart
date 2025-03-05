@@ -1,3 +1,5 @@
+// lib/providers/filter_provider.dart
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Provider to store the allergen filter state (on/off)
@@ -6,52 +8,56 @@ final allergenFilterEnabledProvider = StateProvider<bool>((ref) => true);
 // Provider for profile-specific filter settings
 class ProfileFilterNotifier extends StateNotifier<Map<String, bool>> {
   ProfileFilterNotifier() : super({});
-
-  // Initialize with profiles
+  
+  // Initialize with profiles - only add new ones, don't reset existing ones
   void initializeWithProfiles(List<String> profileIds) {
-    // Skip if profileIds is empty or null to avoid unnecessary updates
-    if (profileIds.isEmpty) return;
+    print("initializeWithProfiles called with: $profileIds");
     
-    // Check if state already contains these profiles to avoid unnecessary updates
-    final existingIds = state.keys.toSet();
-    final newIds = profileIds.toSet();
-    
-    // Only update if there are actual changes to make
-    if (existingIds.containsAll(newIds) && newIds.containsAll(existingIds)) {
-      return; // No changes needed
+    if (profileIds.isEmpty) {
+      print("ProfileIds is empty, skipping initialization");
+      return;
     }
     
-    final initialState = Map<String, bool>.fromEntries(
-      profileIds.map((id) => MapEntry(id, true))
-    );
+    // Create a new map that preserves existing settings
+    final Map<String, bool> newState = Map<String, bool>.from(state);
     
-    // Preserve existing settings for profiles that already exist
-    final updatedState = {
-      ...initialState,
-      ...Map.fromEntries(
-        state.entries.where((entry) => initialState.containsKey(entry.key))
-      ),
-    };
+    // Only add new profiles that aren't already in the state
+    for (final id in profileIds) {
+      if (!newState.containsKey(id)) {
+        newState[id] = true; // Default to enabled
+      }
+    }
     
-    // Use Future.delayed to ensure we're outside the widget build phase
-    Future.delayed(Duration.zero, () {
-      state = updatedState;
-    });
+    print("Final profile filter state: $newState");
+    state = newState;
   }
-
-  // Toggle filter for a specific profile
+  
+  // CRITICAL FIX: Toggle filter for a specific profile using bracket notation
   void toggleProfileFilter(String profileId, bool isEnabled) {
-    state = {
-      ...state,
-      profileId: isEnabled,
-    };
+    print("toggleProfileFilter called with profileId: $profileId, isEnabled: $isEnabled");
+    
+    // Create a new map with all existing entries
+    final newState = Map<String, bool>.from(state);
+    
+    // Update the specific profile's value using bracket notation
+    newState[profileId] = isEnabled;
+    
+    print("Updated state: $newState");
+    state = newState;
   }
-
+  
   // Reset all profile filters to enabled
   void resetFilters() {
-    state = Map.fromEntries(
-      state.entries.map((entry) => MapEntry(entry.key, true))
-    );
+    print("resetFilters called");
+    
+    final newState = Map<String, bool>.from(state);
+    
+    for (final id in newState.keys) {
+      newState[id] = true;
+    }
+    
+    print("Reset state: $newState");
+    state = newState;
   }
 }
 
@@ -59,3 +65,6 @@ class ProfileFilterNotifier extends StateNotifier<Map<String, bool>> {
 final profileFilterProvider = StateNotifierProvider<ProfileFilterNotifier, Map<String, bool>>((ref) {
   return ProfileFilterNotifier();
 });
+
+// Add a new provider to force refresh when profile allergens change
+final allergenRefreshProvider = StateProvider<int>((ref) => 0);

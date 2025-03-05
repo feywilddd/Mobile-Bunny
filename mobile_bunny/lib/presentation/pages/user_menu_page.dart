@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
+import '../providers/filter_provider.dart';
 
 class UserMenuPage extends ConsumerStatefulWidget {
   const UserMenuPage({super.key});
@@ -287,353 +288,359 @@ class _UserMenuPageState extends ConsumerState<UserMenuPage> {
   }
 
   // Show form to add a new profile
-  void _showAddProfileForm(BuildContext context) {
-    final nameController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    List<String> selectedAllergens = [];
-    
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              backgroundColor: const Color(0xFF1C1C1C),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Ajouter un profil',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
+ void _showAddProfileForm(BuildContext context) {
+  final nameController = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+  List<String> selectedAllergens = [];
+  
+  showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return Dialog(
+            backgroundColor: const Color(0xFF1C1C1C),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Ajouter un profil',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 24),
-                      TextFormField(
-                        controller: nameController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'Nom',
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          hintText: 'Nom du profil',
-                          hintStyle: TextStyle(color: Colors.grey[600]),
-                          filled: true,
-                          fillColor: Colors.grey[900],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    TextFormField(
+                      controller: nameController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'Nom',
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        hintText: 'Nom du profil',
+                        hintStyle: TextStyle(color: Colors.grey[600]),
+                        filled: true,
+                        fillColor: Colors.grey[900],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.all(16),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer un nom';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Allergènes',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: commonAllergens.map((allergen) {
+                        final isSelected = selectedAllergens.contains(allergen);
+                        return FilterChip(
+                          selected: isSelected,
+                          label: Text(allergen),
+                          selectedColor: const Color(0xFFE4DF96),
+                          checkmarkColor: Colors.black,
+                          backgroundColor: Colors.grey[800],
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.black : Colors.white,
                           ),
-                          contentPadding: const EdgeInsets.all(16),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer un nom';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Allergènes',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: commonAllergens.map((allergen) {
-                          final isSelected = selectedAllergens.contains(allergen);
-                          return FilterChip(
-                            selected: isSelected,
-                            label: Text(allergen),
-                            selectedColor: const Color(0xFFE4DF96),
-                            checkmarkColor: Colors.black,
-                            backgroundColor: Colors.grey[800],
-                            labelStyle: TextStyle(
-                              color: isSelected ? Colors.black : Colors.white,
-                            ),
-                            onSelected: (selected) {
-                              setState(() {
-                                if (selected) {
-                                  selectedAllergens.add(allergen);
-                                } else {
-                                  selectedAllergens.remove(allergen);
-                                }
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () async {
-                          if (formKey.currentState!.validate()) {
-                            final user = FirebaseAuth.instance.currentUser;
-                            if (user != null) {
-                              Navigator.of(context).pop();
-                              setState(() => isLoading = true);
-                              
-                              try {
-                                final newProfile = {
-                                  'name': nameController.text,
-                                  'isMainUser': false,
-                                  'allergens': selectedAllergens,
-                                  'createdAt': DateTime.now(),
-                                };
-                                
-                                final docRef = await FirebaseFirestore.instance
-                                    .collection('users')
-                                    .doc(user.uid)
-                                    .collection('familyProfiles')
-                                    .add(newProfile);
-                                
-                                // Refresh the list of profiles
-                                _fetchFamilyProfiles();
-                                
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Profil ajouté avec succès'),
-                                    backgroundColor: Colors.green,
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              } catch (e) {
-                                print('Error adding profile: $e');
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Erreur lors de l\'ajout: $e'),
-                                    backgroundColor: Colors.red,
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                                setState(() => isLoading = false);
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                selectedAllergens.add(allergen);
+                              } else {
+                                selectedAllergens.remove(allergen);
                               }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (formKey.currentState!.validate()) {
+                          final user = FirebaseAuth.instance.currentUser;
+                          if (user != null) {
+                            Navigator.of(context).pop();
+                            this.setState(() => isLoading = true);
+                            
+                            try {
+                              final newProfile = {
+                                'name': nameController.text,
+                                'isMainUser': false,
+                                'allergens': selectedAllergens,
+                                'createdAt': DateTime.now(),
+                              };
+                              
+                              final docRef = await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(user.uid)
+                                  .collection('familyProfiles')
+                                  .add(newProfile);
+                              
+                              // Refresh the list of profiles
+                              await _fetchFamilyProfiles();
+                              
+                              // IMPORTANT: Refresh the allergen filters to force UI update
+                              ref.read(allergenRefreshProvider.notifier).state++;
+                              
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Profil ajouté avec succès'),
+                                  backgroundColor: Colors.green,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            } catch (e) {
+                              print('Error adding profile: $e');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Erreur lors de l\'ajout: $e'),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              this.setState(() => isLoading = false);
                             }
                           }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFDB816E),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Ajouter',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFDB816E),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text(
-                          'Annuler',
-                          style: TextStyle(color: Colors.white),
+                      child: const Text(
+                        'Ajouter',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text(
+                        'Annuler',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            );
-          },
-        );
-      },
-    );
-  }
+            ),
+          );
+        },
+      );
+    },
+  );
+}
 
   // Show form to edit an existing profile
-  void _showEditProfileForm(BuildContext context, Map<String, dynamic> profile) {
-    final nameController = TextEditingController(text: profile['name']);
-    final formKey = GlobalKey<FormState>();
-    
-    // Create a copy of profile's current allergens to manipulate
-    List<String> selectedAllergens = List<String>.from(profile['allergens'] ?? []);
-    
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              backgroundColor: const Color(0xFF1C1C1C),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Modifier le profil',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
+void _showEditProfileForm(BuildContext context, Map<String, dynamic> profile) {
+  final nameController = TextEditingController(text: profile['name']);
+  final formKey = GlobalKey<FormState>();
+  
+  // Create a copy of profile's current allergens to manipulate
+  List<String> selectedAllergens = List<String>.from(profile['allergens'] ?? []);
+  
+  showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return Dialog(
+            backgroundColor: const Color(0xFF1C1C1C),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Modifier le profil',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 24),
-                      TextFormField(
-                        controller: nameController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'Nom',
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          hintText: 'Nom du profil',
-                          hintStyle: TextStyle(color: Colors.grey[600]),
-                          filled: true,
-                          fillColor: Colors.grey[900],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    TextFormField(
+                      controller: nameController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'Nom',
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        hintText: 'Nom du profil',
+                        hintStyle: TextStyle(color: Colors.grey[600]),
+                        filled: true,
+                        fillColor: Colors.grey[900],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.all(16),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer un nom';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Allergènes',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: commonAllergens.map((allergen) {
+                        final isSelected = selectedAllergens.contains(allergen);
+                        return FilterChip(
+                          selected: isSelected,
+                          label: Text(allergen),
+                          selectedColor: const Color(0xFFE4DF96),
+                          checkmarkColor: Colors.black,
+                          backgroundColor: Colors.grey[800],
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.black : Colors.white,
                           ),
-                          contentPadding: const EdgeInsets.all(16),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer un nom';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Allergènes',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: commonAllergens.map((allergen) {
-                          final isSelected = selectedAllergens.contains(allergen);
-                          return FilterChip(
-                            selected: isSelected,
-                            label: Text(allergen),
-                            selectedColor: const Color(0xFFE4DF96),
-                            checkmarkColor: Colors.black,
-                            backgroundColor: Colors.grey[800],
-                            labelStyle: TextStyle(
-                              color: isSelected ? Colors.black : Colors.white,
-                            ),
-                            onSelected: (selected) {
-                              setState(() {
-                                if (selected) {
-                                  selectedAllergens.add(allergen);
-                                } else {
-                                  selectedAllergens.remove(allergen);
-                                }
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () async {
-                          if (formKey.currentState!.validate()) {
-                            final user = FirebaseAuth.instance.currentUser;
-                            if (user != null) {
-                              Navigator.of(context).pop();
-                              setState(() => isLoading = true);
-                              
-                              try {
-                                await FirebaseFirestore.instance
-                                    .collection('users')
-                                    .doc(user.uid)
-                                    .collection('familyProfiles')
-                                    .doc(profile['id'])
-                                    .update({
-                                  'name': nameController.text,
-                                  'allergens': selectedAllergens,
-                                  'updatedAt': DateTime.now(),
-                                });
-                                
-                                // Refresh the list of profiles
-                                _fetchFamilyProfiles();
-                                
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Profil mis à jour avec succès'),
-                                    backgroundColor: Colors.green,
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              } catch (e) {
-                                print('Error updating profile: $e');
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Erreur lors de la mise à jour: $e'),
-                                    backgroundColor: Colors.red,
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                                setState(() => isLoading = false);
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                selectedAllergens.add(allergen);
+                              } else {
+                                selectedAllergens.remove(allergen);
                               }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (formKey.currentState!.validate()) {
+                          final user = FirebaseAuth.instance.currentUser;
+                          if (user != null) {
+                            Navigator.of(context).pop();
+                            this.setState(() => isLoading = true);
+                            
+                            try {
+                              await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(user.uid)
+                                  .collection('familyProfiles')
+                                  .doc(profile['id'])
+                                  .update({
+                                'name': nameController.text,
+                                'allergens': selectedAllergens,
+                                'updatedAt': DateTime.now(),
+                              });
+                              
+                              // Refresh the list of profiles
+                              await _fetchFamilyProfiles();
+                              
+                              // IMPORTANT: Add this line to force UI update for allergen filtering
+                              print("Updating allergenRefreshProvider after profile edit");
+                              ref.read(allergenRefreshProvider.notifier).state++;
+                              
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Profil mis à jour avec succès'),
+                                  backgroundColor: Colors.green,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            } catch (e) {
+                              print('Error updating profile: $e');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Erreur lors de la mise à jour: $e'),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              this.setState(() => isLoading = false);
                             }
                           }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFDB816E),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Enregistrer',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFDB816E),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text(
-                          'Annuler',
-                          style: TextStyle(color: Colors.white),
+                      child: const Text(
+                        'Enregistrer',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text(
+                        'Annuler',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            );
-          },
-        );
-      },
-    );
-  }
-
+            ),
+          );
+        },
+      );
+    },
+  );
+}
   // Show confirmation dialog before deleting a profile
   void _showDeleteConfirmation(BuildContext context, Map<String, dynamic> profile) {
     showDialog(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:mobile_bunny/presentation/pages/restaurants_page.dart';
+import 'package:mobile_bunny/presentation/pages/tracking_page.dart';
 
 class CustomBottomNavigationBar extends StatefulWidget {
   const CustomBottomNavigationBar({super.key});
@@ -28,7 +30,15 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
         // Already on menu page
         break;
       case 2: // Cart
-        // Add cart page navigation when implemented
+       Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TrackingPage(
+            restaurantPosition: LatLng(46.03115353128858, -73.44116406758411),
+            clientPosition: LatLng(46.02358, -73.43292), // Louvre (exemple)
+          ),
+      ),
+    );
         break;
     }
   }

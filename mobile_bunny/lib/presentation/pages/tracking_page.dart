@@ -24,6 +24,8 @@ class _TrackingPageState extends State<TrackingPage> {
   int currentStep = 0;
   Timer? _timer;
   late BitmapDescriptor deliveryPin;
+  late BitmapDescriptor restaurantPin;
+  late BitmapDescriptor homePin;
 
   @override
   void initState() {
@@ -42,6 +44,10 @@ class _TrackingPageState extends State<TrackingPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       deliveryPin = await BitmapDescriptor.asset(
           const ImageConfiguration(size: Size(43, 43)), "assets/delivery-bike.png");
+      restaurantPin = await BitmapDescriptor.asset(
+          const ImageConfiguration(size: Size(43, 43)), "assets/restaurant-map-point.png");
+      homePin = await BitmapDescriptor.asset(
+        const ImageConfiguration(size: Size(43, 43)), "assets/home-map-point.png");
       setState(() {});
     });
 
@@ -140,12 +146,12 @@ class _TrackingPageState extends State<TrackingPage> {
           Marker(
             markerId: MarkerId("restaurant"),
             position: widget.restaurantPosition,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+            icon: restaurantPin,//BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           ),
           Marker(
             markerId: MarkerId("client"),
             position: widget.clientPosition,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+            icon: homePin,//BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
           ),
           if (livreurMarker != null) livreurMarker!,
         },

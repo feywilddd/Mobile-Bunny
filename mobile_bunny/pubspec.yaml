@@ -78,6 +78,8 @@ flutter:
   assets:
       - .env
       - assets/delivery-bike.png
+      - assets/home-map-point.png
+      - assets/restaurant-map-point.png
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 

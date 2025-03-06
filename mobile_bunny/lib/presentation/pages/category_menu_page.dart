@@ -1,5 +1,3 @@
-// lib/pages/category_menu_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/menu_provider.dart';
@@ -17,12 +15,10 @@ class CategoryPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final menuAsyncValue = ref.watch(menuProvider);
     
-    // Watch the allergen filter providers
     final isAllergenFilterEnabled = ref.watch(allergenFilterEnabledProvider);
     final profileFilters = ref.watch(profileFilterProvider);
     final profileState = ref.watch(profileProvider);
     
-    // Watch the refresh counter to force rebuild when allergens change
     ref.watch(allergenRefreshProvider);
     
     return Scaffold(
@@ -31,41 +27,32 @@ class CategoryPage extends ConsumerWidget {
       backgroundColor: const Color(0xFF212529),
       body: menuAsyncValue.when(
         data: (menuItems) {
-          // First filter by category
           var categoryItems = menuItems.where((item) => item.category == category).toList();
           
-          // Then apply allergen filtering if enabled
           if (isAllergenFilterEnabled) {
             categoryItems = categoryItems.where((item) {
-              // If the item has no allergens, it's always shown
               if (item.allergens.isEmpty) {
                 return true;
               }
               
-              // Check all enabled profiles for allergens
               for (final entry in profileFilters.entries) {
                 final profileId = entry.key;
                 final isProfileEnabled = entry.value;
                 
-                // Skip profiles that are disabled in the filter
                 if (!isProfileEnabled) continue;
                 
-                // Find the actual profile from profileState to get its allergens
                 final profileIndex = profileState.profiles.indexWhere((p) => p.id == profileId);
-                if (profileIndex == -1) continue; // Profile not found
+                if (profileIndex == -1) continue;
                 
                 final profile = profileState.profiles[profileIndex];
                 
-                // Check if this item contains any allergens the profile is allergic to
                 for (final allergen in profile.allergens) {
                   if (item.allergens.contains(allergen)) {
-                    // This item contains an allergen the profile is allergic to
                     return false;
                   }
                 }
               }
               
-              // No matching allergies found for any enabled profile
               return true;
             }).toList();
           }
@@ -86,7 +73,6 @@ class CategoryPage extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    // Show filter indicator
                     if (isAllergenFilterEnabled)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

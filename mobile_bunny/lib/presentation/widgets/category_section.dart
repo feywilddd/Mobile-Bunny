@@ -20,79 +20,47 @@ class CategorySection extends ConsumerWidget {
   
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    print("Building CategorySection for $title");
-    
-    // Watch the allergen filter providers
     final isAllergenFilterEnabled = ref.watch(allergenFilterEnabledProvider);
     final profileFilters = ref.watch(profileFilterProvider);
     final profileState = ref.watch(profileProvider);
     
-    // Watch the refresh counter to force rebuild when allergens change
     final refreshCounter = ref.watch(allergenRefreshProvider);
     
-    print("CategorySection refresh build #$refreshCounter");
-    print("AllergenFilterEnabled: $isAllergenFilterEnabled");
-    print("ProfileFilters: $profileFilters");
-    print("Profile count: ${profileState.profiles.length}");
-    
-    // Get all items for this category
     final categoryItems = menuItems.where((item) => item.category == title).toList();
-    print("Category items before filtering: ${categoryItems.length}");
     
-    // Then apply allergen filtering if enabled
     List<MenuItem> filteredItems = List.from(categoryItems);
     
     if (isAllergenFilterEnabled) {
-      print("Applying allergen filtering");
-      
       filteredItems = categoryItems.where((item) {
-        // If the item has no allergens, it's always shown
         if (item.allergens.isEmpty) {
-          print("Item ${item.name} has no allergens, showing it");
           return true;
         }
         
-        // Check all enabled profiles for allergens
         for (final entry in profileFilters.entries) {
           final profileId = entry.key;
           final isProfileEnabled = entry.value;
           
-          print("Checking profile $profileId (enabled: $isProfileEnabled)");
-          
-          // Skip profiles that are disabled in the filter
           if (!isProfileEnabled) {
-            print("Profile $profileId is disabled, skipping");
             continue;
           }
           
-          // Find the actual profile from profileState to get its allergens
           final profile = profileState.profiles.firstWhere(
             (p) => p.id == profileId,
             orElse: () => Profile(id: '', name: '', allergens: [], createdAt: DateTime.now()),
           );
           
-          print("Profile ${profile.name} has allergens: ${profile.allergens}");
-          print("Item ${item.name} has allergens: ${item.allergens}");
-          
-          // Check if this item contains any allergens the profile is allergic to
           for (final allergen in profile.allergens) {
             if (item.allergens.contains(allergen)) {
-              print("Item ${item.name} contains allergen $allergen, hiding it");
               return false;
             }
           }
         }
         
-        print("Item ${item.name} is safe for all enabled profiles, showing it");
         return true;
       }).toList();
     }
     
-    print("Filtered items: ${filteredItems.length}");
-    
-    // Take only the first 3 items
     final displayedItems = filteredItems.take(3).toList();
-    print("Displayed items (limited to 3): ${displayedItems.length}");
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -16,7 +16,7 @@ import '../pages/restaurants_page.dart';
 
 class MenuPage extends ConsumerStatefulWidget {
   const MenuPage({super.key});
-  
+ 
   @override
   ConsumerState<MenuPage> createState() => _MenuPageState();
 }
@@ -27,37 +27,27 @@ class _MenuPageState extends ConsumerState<MenuPage> {
   @override
   void initState() {
     super.initState();
-    // Initialize profile data and filters in initState
     _initializeFilters();
   }
 
   Future<void> _initializeFilters() async {
     try {
-      print("MenuPage._initializeFilters - Started");
-      
-      // Make sure profile data is loaded first
       await ref.read(profileProvider.notifier).fetchFamilyProfiles();
-      
-      // Initialize filter with profile IDs
+     
       final profiles = ref.read(profileProvider).profiles;
       final profileIds = profiles.map((profile) => profile.id).toList();
-      
-      print("MenuPage._initializeFilters - Initializing with profile IDs: $profileIds");
+     
       ref.read(profileFilterProvider.notifier).initializeWithProfiles(profileIds);
-      
+     
       if (mounted) {
         setState(() {
           isInitialized = true;
-          print("MenuPage._initializeFilters - Initialization complete");
         });
       }
     } catch (e) {
-      print('Error initializing filters: $e');
-      // Still mark as initialized so we can show something
       if (mounted) {
         setState(() {
           isInitialized = true;
-          print("MenuPage._initializeFilters - Initialization failed but continuing");
         });
       }
     }
@@ -65,20 +55,12 @@ class _MenuPageState extends ConsumerState<MenuPage> {
 
   @override
   Widget build(BuildContext context) {
-    print("MenuPage.build - isInitialized: $isInitialized");
-    
     final user = ref.watch(authProvider);
     final menuAsyncValue = ref.watch(menuProvider);
-    
-    // Also watch profile provider to ensure we rebuild when profiles change
+   
     ref.watch(profileProvider);
-    
-    // Watch allergen refresh provider to rebuild when profile allergens change
     ref.watch(allergenRefreshProvider);
-    
-    // Log the current state of the filter
-    print("MenuPage.build - Current filter state: ${ref.read(profileFilterProvider)}");
-    
+   
     if (!isInitialized) {
       return Scaffold(
         appBar: const CustomAppBar(),
@@ -87,7 +69,7 @@ class _MenuPageState extends ConsumerState<MenuPage> {
         body: const Center(child: CircularProgressIndicator()),
       );
     }
-    
+   
     return Scaffold(
       appBar: const CustomAppBar(),
       bottomNavigationBar: const CustomBottomNavigationBar(),

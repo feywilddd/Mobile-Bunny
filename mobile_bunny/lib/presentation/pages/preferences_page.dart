@@ -32,27 +32,18 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
     setState(() => isLoading = true);
     
     try {
-      print("PreferencesPage._initializeData - Started");
-      
-      // Fetch data from providers
       await ref.read(addressProvider.notifier).fetchUserAddresses();
       await ref.read(profileProvider.notifier).fetchFamilyProfiles();
       
-      // Initialize profile filters with fetched profiles
       final profiles = ref.read(profileProvider).profiles;
       final profileIds = profiles.map((profile) => profile.id).toList();
       
-      print("PreferencesPage._initializeData - Initializing with profile IDs: $profileIds");
       ref.read(profileFilterProvider.notifier).initializeWithProfiles(profileIds);
-      
-      print("PreferencesPage._initializeData - Current filter state: ${ref.read(profileFilterProvider)}");
       
       if (mounted) {
         setState(() => isLoading = false);
-        print("PreferencesPage._initializeData - Initialization complete");
       }
     } catch (e) {
-      print('Error initializing data: $e');
       if (mounted) {
         setState(() => isLoading = false);
       }
@@ -61,24 +52,16 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
 
   @override
   Widget build(BuildContext context) {
-    print("PreferencesPage.build - Started");
-    
     final isAllergenFilterEnabled = ref.watch(allergenFilterEnabledProvider);
     final addressState = ref.watch(addressProvider);
     final profileState = ref.watch(profileProvider);
     
-    // Also watch profile filter provider for changes
     final profileFilters = ref.watch(profileFilterProvider);
-    print("PreferencesPage.build - Current filter state: $profileFilters");
     
-    // Watch the refresh counter
     final refreshCount = ref.watch(allergenRefreshProvider);
-    print("PreferencesPage.build - Refresh count: $refreshCount");
     
-    // Consider additional state indicators beyond just the local isLoading
     final isDataLoading = isLoading || addressState.isLoading || profileState.isLoading;
     
-    // Check for errors
     final hasError = addressState.error != null || profileState.error != null;
     final errorMessage = addressState.error ?? profileState.error;
     
@@ -127,7 +110,6 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Title - Addresses
                           const Text(
                             'Adresses de livraison',
                             style: TextStyle(
@@ -138,11 +120,9 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
                           ),
                           const SizedBox(height: 16),
                           
-                          // Address management card
                           const AddressCard(),
                           const SizedBox(height: 30),
                           
-                          // Title - Allergen filtering
                           const Text(
                             'Préférences de filtrage',
                             style: TextStyle(
@@ -153,11 +133,9 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
                           ),
                           const SizedBox(height: 24),
                         
-                          // Allergen filter toggle card
                           const AllergenFilterCard(),
                           const SizedBox(height: 24),
                           
-                          // Profile-specific toggles - only visible if main toggle is on
                           if (isAllergenFilterEnabled) ...[
                             const Text(
                               'Filtrer pour qui?',
@@ -174,45 +152,7 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
                             ),
                             const SizedBox(height: 16),
                             
-                            // Profile filter list
                             const ProfileFilterList(),
-                            
-                            // Debug button
-                            const SizedBox(height: 24),
-                            ElevatedButton(
-                              onPressed: () {
-                                // Dump the current state of all filters to the console
-                                final isEnabled = ref.read(allergenFilterEnabledProvider);
-                                final filters = ref.read(profileFilterProvider);
-                                final profiles = ref.read(profileProvider).profiles;
-                                
-                                print("=== FILTER DEBUG INFO ===");
-                                print("Allergen filter enabled: $isEnabled");
-                                print("Profile filters: $filters");
-                                print("Available profiles: ${profiles.length}");
-                                
-                                for (final profile in profiles) {
-                                  final isFilterEnabled = filters[profile.id] ?? true;
-                                  print("Profile: ${profile.name} (${profile.id})");
-                                  print("  Filter enabled: $isFilterEnabled");
-                                  print("  Allergens: ${profile.allergens}");
-                                }
-                                
-                                // Force a refresh for testing
-                                ref.read(allergenRefreshProvider.notifier).state++;
-                                
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("Filter debug info printed to console"),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                              ),
-                              child: const Text("Debug Filters"),
-                            ),
                           ],
                         ],
                       ),

@@ -38,7 +38,6 @@ class _UserMenuPageState extends ConsumerState<UserMenuPage> {
     _fetchFamilyProfiles();
   }
 
-  // Fetch all family profiles for the current user
   Future<void> _fetchFamilyProfiles() async {
     setState(() => isLoading = true);
     
@@ -62,7 +61,6 @@ class _UserMenuPageState extends ConsumerState<UserMenuPage> {
             isLoading = false;
           });
         } else {
-          // Create a default profile for the user if none exists
           final userDoc = await FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
@@ -96,7 +94,6 @@ class _UserMenuPageState extends ConsumerState<UserMenuPage> {
           });
         }
       } catch (e) {
-        print('Error fetching family profiles: $e');
         setState(() => isLoading = false);
       }
     } else {
@@ -104,7 +101,6 @@ class _UserMenuPageState extends ConsumerState<UserMenuPage> {
     }
   }
 
-  // Get user initials for avatar display
   String _getInitials(String name) {
     if (name.isEmpty) return '?';
     
@@ -150,7 +146,6 @@ class _UserMenuPageState extends ConsumerState<UserMenuPage> {
     );
   }
 
-  // Build the list of family profiles
   Widget _buildFamilyProfilesList() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,7 +282,6 @@ class _UserMenuPageState extends ConsumerState<UserMenuPage> {
     );
   }
 
-  // Show form to add a new profile
  void _showAddProfileForm(BuildContext context) {
   final nameController = TextEditingController();
   final formKey = GlobalKey<FormState>();
@@ -403,10 +397,8 @@ class _UserMenuPageState extends ConsumerState<UserMenuPage> {
                                   .collection('familyProfiles')
                                   .add(newProfile);
                               
-                              // Refresh the list of profiles
                               await _fetchFamilyProfiles();
                               
-                              // IMPORTANT: Refresh the allergen filters to force UI update
                               ref.read(allergenRefreshProvider.notifier).state++;
                               
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -417,7 +409,6 @@ class _UserMenuPageState extends ConsumerState<UserMenuPage> {
                                 ),
                               );
                             } catch (e) {
-                              print('Error adding profile: $e');
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('Erreur lors de l\'ajout: $e'),
@@ -464,12 +455,10 @@ class _UserMenuPageState extends ConsumerState<UserMenuPage> {
   );
 }
 
-  // Show form to edit an existing profile
 void _showEditProfileForm(BuildContext context, Map<String, dynamic> profile) {
   final nameController = TextEditingController(text: profile['name']);
   final formKey = GlobalKey<FormState>();
   
-  // Create a copy of profile's current allergens to manipulate
   List<String> selectedAllergens = List<String>.from(profile['allergens'] ?? []);
   
   showDialog(
@@ -580,11 +569,8 @@ void _showEditProfileForm(BuildContext context, Map<String, dynamic> profile) {
                                 'updatedAt': DateTime.now(),
                               });
                               
-                              // Refresh the list of profiles
                               await _fetchFamilyProfiles();
                               
-                              // IMPORTANT: Add this line to force UI update for allergen filtering
-                              print("Updating allergenRefreshProvider after profile edit");
                               ref.read(allergenRefreshProvider.notifier).state++;
                               
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -595,7 +581,6 @@ void _showEditProfileForm(BuildContext context, Map<String, dynamic> profile) {
                                 ),
                               );
                             } catch (e) {
-                              print('Error updating profile: $e');
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('Erreur lors de la mise à jour: $e'),
@@ -641,7 +626,7 @@ void _showEditProfileForm(BuildContext context, Map<String, dynamic> profile) {
     },
   );
 }
-  // Show confirmation dialog before deleting a profile
+
   void _showDeleteConfirmation(BuildContext context, Map<String, dynamic> profile) {
     showDialog(
       context: context,
@@ -676,7 +661,6 @@ void _showEditProfileForm(BuildContext context, Map<String, dynamic> profile) {
                         .doc(profile['id'])
                         .delete();
                     
-                    // Refresh the list of profiles
                     _fetchFamilyProfiles();
                     
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -687,7 +671,6 @@ void _showEditProfileForm(BuildContext context, Map<String, dynamic> profile) {
                       ),
                     );
                   } catch (e) {
-                    print('Error deleting profile: $e');
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Erreur lors de la suppression: $e'),

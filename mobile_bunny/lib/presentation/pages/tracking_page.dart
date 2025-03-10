@@ -1,12 +1,9 @@
-import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import '../widgets/custom_app_bar.dart';
+import '../providers/tracking_provider.dart';
 
-class TrackingPage extends StatefulWidget {
+class TrackingPage extends ConsumerStatefulWidget {
   final LatLng restaurantPosition;
   final LatLng clientPosition;
 
@@ -16,106 +13,38 @@ class TrackingPage extends StatefulWidget {
   _TrackingPageState createState() => _TrackingPageState();
 }
 
-class _TrackingPageState extends State<TrackingPage> {
+class _TrackingPageState extends ConsumerState<TrackingPage> {
   GoogleMapController? mapController;
-  Marker? livreurMarker;
-  List<LatLng> routePoints = [];
-  Set<Polyline> polylines = {};
-  int currentStep = 0;
-  Timer? _timer;
   late BitmapDescriptor deliveryPin;
   late BitmapDescriptor restaurantPin;
   late BitmapDescriptor homePin;
 
   @override
   void initState() {
-    _loadPin();
     super.initState();
-    _generateRoute();
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+    ref.read(trackingProvider.notifier).generateRoute(widget.restaurantPosition, widget.clientPosition);
+    _loadPin();
   }
 
   Future<void> _loadPin() async {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+   WidgetsBinding.instance.addPostFrameCallback((_) async {
       deliveryPin = await BitmapDescriptor.asset(
           const ImageConfiguration(size: Size(43, 43)), "assets/delivery-bike.png");
       restaurantPin = await BitmapDescriptor.asset(
           const ImageConfiguration(size: Size(43, 43)), "assets/restaurant-map-point.png");
       homePin = await BitmapDescriptor.asset(
-        const ImageConfiguration(size: Size(43, 43)), "assets/home-map-point.png");
+          const ImageConfiguration(size: Size(43, 43)), "assets/home-map-point.png");
       setState(() {});
     });
-
   }
-
-  // 📍 Générer le trajet avec Google Directions API
-  Future<void> _generateRoute() async {
-    PolylinePoints polylinePoints = PolylinePoints();
-
-    String apiKey = dotenv.get('MAP_API_KEY');
-
-    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
-      googleApiKey: apiKey,
-      request: PolylineRequest(
-        origin: PointLatLng(widget.restaurantPosition.latitude, widget.restaurantPosition.longitude),
-        destination: PointLatLng(widget.clientPosition.latitude, widget.clientPosition.longitude),
-        mode: TravelMode.driving,
-    ),
-  );
-
-
-    if (result.points.isNotEmpty) {
-      setState(() {
-        routePoints = result.points.map((p) => LatLng(p.latitude, p.longitude)).toList();
-
-        polylines = {
-          Polyline(
-            polylineId: PolylineId("route"),
-            points: routePoints,
-            color: Colors.blue,
-            width: 5,
-            patterns: [PatternItem.dash(10), PatternItem.gap(10)], 
-          ),
-        };
-      });
-
-      print("Points de la route: $routePoints");
-      _startSimulation();
-    } else {
-      print("Aucun itinéraire trouvé !");
-    }
-
-  }
-  
-  // 🚛 Simulation du déplacement du livreur
- void _startSimulation() {
-  _timer = Timer.periodic(Duration(seconds: 5), (timer) {
-    if (currentStep < routePoints.length - 1) {
-      setState(() {
-        livreurMarker = Marker(
-          markerId: MarkerId("livreur"),
-          position: routePoints[currentStep],
-          icon: deliveryPin,//BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-        );
-        currentStep++;
-      });
-
-      print("Marqueur livreur déplacé : ${routePoints[currentStep]}");
-      mapController?.animateCamera(CameraUpdate.newLatLng(routePoints[currentStep]));
-    } else {
-      print("Simulation terminée");
-      timer.cancel();
-    }
-  });
-}
 
   @override
   Widget build(BuildContext context) {
+    final trackingState = ref.watch(trackingProvider);
+    LatLng livreurPosition = trackingState.routePoints.isNotEmpty
+        ? trackingState.routePoints[trackingState.currentStep]
+        : widget.restaurantPosition;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF1C1C1C),
@@ -134,28 +63,23 @@ class _TrackingPageState extends State<TrackingPage> {
         ),
       ),
       body: GoogleMap(
-        initialCameraPosition: CameraPosition(
-          target: widget.restaurantPosition,
-          zoom: 14.0,
-        ),
+        initialCameraPosition: CameraPosition(target: widget.restaurantPosition, zoom: 14.0),
         onMapCreated: (controller) {
-          print("Google Maps chargé !");
           mapController = controller;
         },
         markers: {
-          Marker(
-            markerId: MarkerId("restaurant"),
-            position: widget.restaurantPosition,
-            icon: restaurantPin,//BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-          ),
-          Marker(
-            markerId: MarkerId("client"),
-            position: widget.clientPosition,
-            icon: homePin,//BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-          ),
-          if (livreurMarker != null) livreurMarker!,
+          Marker(markerId: MarkerId("restaurant"), position: widget.restaurantPosition, icon: restaurantPin),
+          Marker(markerId: MarkerId("client"), position: widget.clientPosition, icon: homePin),
+          Marker(markerId: MarkerId("livreur"), position: livreurPosition, icon: deliveryPin),
         },
-       polylines: polylines,
+        polylines: {
+          Polyline(
+            polylineId: PolylineId("route"),
+            points: trackingState.routePoints,
+            color: Colors.blue,
+            width: 5,
+          ),
+        },
       ),
     );
   }

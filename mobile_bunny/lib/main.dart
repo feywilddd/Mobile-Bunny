@@ -18,10 +18,9 @@ void main() async {
   } catch (e) {
     print("❌ Error loading .env file: $e");
   }
-  
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
-    name: 'name-here',
   );
 
   runApp(const MyApp());

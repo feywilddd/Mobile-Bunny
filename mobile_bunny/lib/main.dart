@@ -18,7 +18,7 @@ void main() async {
   } catch (e) {
     print("❌ Error loading .env file: $e");
   }
-  
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );

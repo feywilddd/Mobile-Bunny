@@ -73,15 +73,24 @@ class AuthNotifier extends StateNotifier<User?> {
     try {
       await _firebaseAuth.createUserWithEmailAndPassword(
           email: email, password: password);
+      print("User registered successfully"); // Debugging purpose
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
         print('The password provided is too weak.');
+        throw FirebaseAuthException(
+            code: e.code, message: 'The password provided is too weak.');
       } else if (e.code == 'email-already-in-use') {
         print('The account already exists for that email.');
+        throw FirebaseAuthException(
+            code: e.code,
+            message: 'The account already exists for that email.');
+      } else {
+        print('FirebaseAuthException: ${e.message}');
+        throw FirebaseAuthException(code: e.code, message: e.message);
       }
     } catch (e) {
       print('Error signing up: $e');
-      rethrow;
+      throw Exception('Error signing up: $e');
     }
   }
 

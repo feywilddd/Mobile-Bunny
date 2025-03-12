@@ -18,9 +18,11 @@ void main() async {
   } catch (e) {
     print("❌ Error loading .env file: $e");
   }
-
-  await Firebase.initializeApp(
+  
+  // Initialize Firebase only once
+   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+    name: 'mobileBunny',
   );
 
   runApp(const MyApp());

@@ -1,9 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile_bunny/presentation/providers/auth_provider.dart';
 import '../../data/models/address.dart';
 import '../../data/repositories/address_repository.dart';
 
 // Provider for the Address Repository
 final addressRepositoryProvider = Provider<AddressRepository>((ref) {
+  final user = ref.watch(authProvider);
+  
+  // User must be logged in to access addresses
+  if (user == null) {
+    throw Exception('User must be logged in to access addresses');
+  }
+  
   return AddressRepository();
 });
 
@@ -34,13 +42,25 @@ class AddressState {
       error: error,
     );
   }
+  
+  // Get the selected address object
+  Address? get selectedAddress {
+    if (selectedAddressId == null) return null;
+    return addresses.firstWhere(
+      (address) => address.id == selectedAddressId,
+      orElse: () => null as Address, // Will never return null due to firstWhere behavior
+    );
+  }
 }
 
 // StateNotifier for address management
 class AddressNotifier extends StateNotifier<AddressState> {
   final AddressRepository _repository;
 
-  AddressNotifier(this._repository) : super(AddressState());
+  AddressNotifier(this._repository) : super(AddressState()) {
+    // Initialize by fetching addresses
+    fetchUserAddresses();
+  }
 
   // Fetch user addresses
   Future<void> fetchUserAddresses() async {
@@ -48,7 +68,7 @@ class AddressNotifier extends StateNotifier<AddressState> {
     if (state.isLoading) return;
     
     // Set loading state but defer state update to avoid widget build conflicts
-    await Future.delayed(Duration.zero, () {
+    await Future.microtask(() {
       state = state.copyWith(isLoading: true, error: null);
     });
     
@@ -60,8 +80,15 @@ class AddressNotifier extends StateNotifier<AddressState> {
       // If there's no selected address but we have addresses, select the first one
       final effectiveSelectedId = selectedId ?? (addresses.isNotEmpty ? addresses.first.id : null);
       
-      // Use another Future.delayed to ensure this happens outside any widget build
-      await Future.delayed(Duration.zero, () {
+      // If we got a different selected ID than before, update it in Firestore
+      if (effectiveSelectedId != null && 
+          selectedId == null && 
+          addresses.isNotEmpty) {
+        await _repository.setSelectedAddress(effectiveSelectedId);
+      }
+      
+      // Use microtask to ensure this happens outside any widget build
+      await Future.microtask(() {
         state = state.copyWith(
           addresses: addresses,
           selectedAddressId: effectiveSelectedId,
@@ -72,24 +99,13 @@ class AddressNotifier extends StateNotifier<AddressState> {
       });
     } catch (e) {
       print('Error loading addresses: $e');
-      await Future.delayed(Duration.zero, () {
+      await Future.microtask(() {
         state = state.copyWith(
           isLoading: false,
           error: 'Failed to load addresses: $e',
         );
       });
     }
-  }
-  
-  // Helper to compare address lists
-  bool _areAddressListsEqual(List<Address> list1, List<Address> list2) {
-    if (list1.length != list2.length) return false;
-    
-    for (int i = 0; i < list1.length; i++) {
-      if (list1[i].id != list2[i].id) return false;
-    }
-    
-    return true;
   }
 
   // Add a new address
@@ -193,4 +209,36 @@ class AddressNotifier extends StateNotifier<AddressState> {
 final addressProvider = StateNotifierProvider<AddressNotifier, AddressState>((ref) {
   final repository = ref.watch(addressRepositoryProvider);
   return AddressNotifier(repository);
+});
+
+// Simpler providers for UI access
+
+// Provider to check if user has addresses
+final hasAddressesProvider = Provider<bool>((ref) {
+  final addressState = ref.watch(addressProvider);
+  return addressState.addresses.isNotEmpty;
+});
+
+// Provider to check if a default address is selected
+final hasSelectedAddressProvider = Provider<bool>((ref) {
+  final addressState = ref.watch(addressProvider);
+  return addressState.selectedAddressId != null;
+});
+
+// Provider to get the selected address
+final selectedAddressProvider = Provider<Address?>((ref) {
+  final addressState = ref.watch(addressProvider);
+  return addressState.selectedAddress;
+});
+
+// Provider to get address error state
+final addressErrorProvider = Provider<String?>((ref) {
+  final addressState = ref.watch(addressProvider);
+  return addressState.error;
+});
+
+// Provider to get address loading state
+final addressLoadingProvider = Provider<bool>((ref) {
+  final addressState = ref.watch(addressProvider);
+  return addressState.isLoading;
 });

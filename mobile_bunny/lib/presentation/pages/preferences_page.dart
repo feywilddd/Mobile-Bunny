@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import '../providers/address_provider.dart';
+import '../providers/restaurant_provider.dart'; // Add the restaurant provider
 import '../providers/profile_provider.dart';
 import '../providers/filter_provider.dart';
 import '../widgets/address_card.dart';
@@ -11,6 +12,7 @@ import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import 'login_page.dart';
 import 'user_menu_page.dart';
+import '../widgets/restaurant_selection_card.dart';
 
 class PreferencesPage extends ConsumerStatefulWidget {
   const PreferencesPage({super.key});
@@ -32,6 +34,11 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
     setState(() => isLoading = true);
     
     try {
+      // Make sure we fetch restaurants too
+      final restaurantNotifier = ref.read(restaurantProvider.notifier);
+      await restaurantNotifier.fetchRestaurants();
+      
+      // Fetch addresses and profiles
       await ref.read(addressProvider.notifier).fetchUserAddresses();
       await ref.read(profileProvider.notifier).fetchFamilyProfiles();
       
@@ -44,6 +51,7 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
         setState(() => isLoading = false);
       }
     } catch (e) {
+      print('Error initializing data: $e');
       if (mounted) {
         setState(() => isLoading = false);
       }
@@ -52,18 +60,63 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(authProvider);
+    if (user == null) {
+      // Handle not logged in state
+      return Scaffold(
+        appBar: const CustomAppBar(),
+        backgroundColor: const Color(0xFF212529),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Veuillez vous connecter pour accéder à vos préférences',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE79686),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const LoginPage()),
+                  );
+                },
+                child: const Text('Se connecter'),
+              ),
+            ],
+          ),
+        ),
+        bottomNavigationBar: const CustomBottomNavigationBar(),
+      );
+    }
+
     final isAllergenFilterEnabled = ref.watch(allergenFilterEnabledProvider);
     final addressState = ref.watch(addressProvider);
     final profileState = ref.watch(profileProvider);
+    final restaurantState = ref.watch(restaurantProvider);
     
     final profileFilters = ref.watch(profileFilterProvider);
     
     final refreshCount = ref.watch(allergenRefreshProvider);
     
-    final isDataLoading = isLoading || addressState.isLoading || profileState.isLoading;
+    final isDataLoading = isLoading || 
+                        addressState.isLoading || 
+                        profileState.isLoading ||
+                        restaurantState.isLoading;
     
-    final hasError = addressState.error != null || profileState.error != null;
-    final errorMessage = addressState.error ?? profileState.error;
+    // Combine all possible errors
+    final hasError = addressState.error != null || 
+                    profileState.error != null ||
+                    restaurantState.error != null;
+                    
+    final errorMessage = addressState.error ?? 
+                        profileState.error ??
+                        restaurantState.error;
     
     return Scaffold(
       appBar: const CustomAppBar(),
@@ -79,9 +132,9 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
                       children: [
                         const Icon(Icons.error_outline, color: Colors.red, size: 48),
                         const SizedBox(height: 16),
-                        Text(
+                        const Text(
                           'Une erreur est survenue',
-                          style: const TextStyle(color: Colors.white, fontSize: 18),
+                          style: TextStyle(color: Colors.white, fontSize: 18),
                         ),
                         if (errorMessage != null)
                           Padding(
@@ -120,7 +173,28 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
                           ),
                           const SizedBox(height: 16),
                           
-                          const AddressCard(),
+                          // Pass key parameters needed for address selection
+                          AddressCard(),
+                          const SizedBox(height: 30),
+                          
+                          const Text(
+                            'Restaurant sélectionné',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          
+                          // Add Restaurant selection widget
+                          RestaurantSelectionCard(
+                            restaurants: restaurantState.restaurants,
+                            selectedRestaurantId: restaurantState.selectedRestaurantId,
+                            onSelectRestaurant: (restaurantId) async {
+                              await ref.read(restaurantProvider.notifier).setSelectedRestaurant(restaurantId);
+                            },
+                          ),
                           const SizedBox(height: 30),
                           
                           const Text(

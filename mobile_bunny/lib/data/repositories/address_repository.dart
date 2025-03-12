@@ -129,15 +129,27 @@ class AddressRepository {
   
   // Set the selected address
   Future<bool> setSelectedAddress(String addressId) async {
-    final userId = _userId;
-    if (userId == null) return false;
+  final userId = _userId;
+  if (userId == null) return false;
+  
+  try {
+    // First check if the user document exists
+    final userDoc = await _userDoc(userId).get();
     
-    try {
+    if (!userDoc.exists) {
+      // Create the user document if it doesn't exist
+      await _userDoc(userId).set({
+        'selectedAddressId': addressId,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } else {
+      // Update existing document
       await _userDoc(userId).update({'selectedAddressId': addressId});
-      return true;
-    } catch (e) {
-      print('Error setting selected address: $e');
-      return false;
     }
+    return true;
+  } catch (e) {
+    print('Error setting selected address: $e');
+    return false;
   }
+}
 }

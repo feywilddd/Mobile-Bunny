@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_bunny/presentation/pages/restaurants_page.dart';
 import 'package:mobile_bunny/presentation/pages/home_menu_page.dart';
 import 'package:mobile_bunny/presentation/pages/basket_page.dart';
-// Import your order provider
 import 'package:mobile_bunny/presentation/providers/order_provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:mobile_bunny/presentation/pages/restaurants_page.dart';
+import 'package:mobile_bunny/presentation/pages/tracking_page.dart';
 
 class CustomBottomNavigationBar extends ConsumerStatefulWidget {
   const CustomBottomNavigationBar({super.key});
@@ -35,10 +37,15 @@ class _CustomBottomNavigationBarState extends ConsumerState<CustomBottomNavigati
         );
         break;
       case 2: // Cart
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const BasketPage()),
-        );
+       Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TrackingPage(
+            restaurantPosition: LatLng(46.03115353128858, -73.44116406758411),
+            clientPosition: LatLng(46.02358, -73.43292),
+          ),
+      ),
+    );
         break;
     }
   }

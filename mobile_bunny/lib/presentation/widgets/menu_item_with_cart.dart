@@ -1,34 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile_bunny/data/models/address.dart';
 import 'package:mobile_bunny/data/models/menu_item.dart';
 import 'package:mobile_bunny/presentation/pages/basket_page.dart';
 import 'package:mobile_bunny/presentation/providers/auth_provider.dart';
 import 'package:mobile_bunny/presentation/providers/order_provider.dart';
-
-// Import your providers
-// import '../providers/auth_provider.dart';
-// import '../providers/order_provider.dart';
-// import '../models/order_model.dart';
+import 'package:mobile_bunny/presentation/providers/restaurant_provider.dart';
+import 'package:mobile_bunny/presentation/providers/address_provider.dart';
 
 /// Helper widget for displaying menu items with add to cart functionality
 class MenuItemWithCart extends ConsumerWidget {
   final MenuItem menuItem;
-  final String restaurantId;
-  final Address restaurantAddress;
   
   const MenuItemWithCart({
     Key? key,
     required this.menuItem,
-    required this.restaurantId,
-    required this.restaurantAddress,
   }) : super(key: key);
   
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider);
-    final orderNotifier = ref.watch(orderNotifierProvider.notifier);
-    final activeOrderAsync = ref.watch(activeOrderProvider);
+    final orderNotifier = ref.watch(orderProvider.notifier);
+    final hasActiveOrder = ref.watch(hasActiveOrderProvider);
+    final restaurantState = ref.watch(restaurantProvider);
+    final addressState = ref.watch(addressProvider);
     
     // Add to cart function
     Future<void> addToCart() async {
@@ -44,36 +38,43 @@ class MenuItemWithCart extends ConsumerWidget {
       }
       
       try {
-        // Check if we have an active order
-        if (activeOrderAsync.value == null) {
-          // For demo purposes, create a dummy delivery address
-          final deliveryAddress = Address(
-            id: 'user-addr-1',
-            label: 'Home',
-            street: '123 Rue Ste-Catherine',
-            postalCode: 'H2X 1Z4',
-            city: 'Montréal',
-            additionalInfo: 'Apt 401',
-            createdAt: DateTime.now(),
+        // Check if restaurant is selected
+        if (restaurantState.selectedRestaurantId == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Aucun restaurant sélectionné. Veuillez en sélectionner un d\'abord.'),
+              duration: Duration(seconds: 3),
+            ),
           );
-          
-          // Create a new order
-          await orderNotifier.createOrder(
-            restaurantId: restaurantId,
-            restaurantAddress: restaurantAddress,
-            deliveryAddress: deliveryAddress,
+          return;
+        }
+        
+        // Check if address is selected
+        if (addressState.selectedAddressId == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Aucune adresse de livraison sélectionnée. Veuillez en sélectionner une d\'abord.'),
+              duration: Duration(seconds: 3),
+            ),
           );
+          return;
         }
         
         // Add the item to cart
-        await orderNotifier.addItem(menuItem);
+        final success = await orderNotifier.addItem(menuItem);
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${menuItem.name} ajouté au panier'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${menuItem.name} ajouté au panier'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Erreur lors de l\'ajout au panier')),
+          );
+        }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erreur: ${e.toString()}')),
@@ -174,7 +175,8 @@ class CartBadge extends ConsumerWidget {
   
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cartItemCount = ref.watch(cartItemCountProvider);
+    final orderState = ref.watch(orderProvider);
+    final cartItemCount = orderState.cartItemCount;
     
     return Stack(
       alignment: Alignment.center,

@@ -1,13 +1,13 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_bunny/data/models/address.dart';
 import 'package:mobile_bunny/data/models/menu_item.dart';
+import 'package:mobile_bunny/data/models/restaurant.dart';
 import 'package:mobile_bunny/presentation/providers/auth_provider.dart';
+import 'package:mobile_bunny/presentation/providers/restaurant_provider.dart';
+import 'package:mobile_bunny/presentation/providers/address_provider.dart';
 import '../../data/models/order.dart';
-import '../../data/repositories/order_repository.dart'; 
-// Import your models and repositories
-// import 'order_model.dart';
-// import 'order_repository.dart';
+import '../../data/repositories/order_repository.dart';
 
 final orderRepositoryProvider = Provider<OrderRepository>((ref) {
   final user = ref.watch(authProvider);
@@ -19,281 +19,408 @@ final orderRepositoryProvider = Provider<OrderRepository>((ref) {
   return OrderRepository(userId: user.uid);
 });
 
-// Provider for active order stream
-final activeOrderStreamProvider = StreamProvider<Order?>((ref) {
-  final user = ref.watch(authProvider);
-  
-  // If no user, return empty stream
-  if (user == null) {
-    return Stream.value(null);
-  }
-  
-  final repository = ref.watch(orderRepositoryProvider);
-  return repository.streamActiveOrder();
-});
+// State class for order data
+class OrderState {
+  final Order? activeOrder;
+  final List<Order> orderHistory;
+  final bool isLoading;
+  final String? error;
 
-// Provider for active order (async value)
-final activeOrderProvider = FutureProvider<Order?>((ref) {
-  final user = ref.watch(authProvider);
-  
-  // If no user, return null
-  if (user == null) {
-    return Future.value(null);
-  }
-  
-  final repository = ref.watch(orderRepositoryProvider);
-  return repository.getActiveOrder();
-});
+  OrderState({
+    this.activeOrder,
+    this.orderHistory = const [],
+    this.isLoading = false,
+    this.error,
+  });
 
-// Provider for order history
-final orderHistoryProvider = FutureProvider<List<Order>>((ref) {
-  final user = ref.watch(authProvider);
-  
-  // If no user, return empty list
-  if (user == null) {
-    return Future.value([]);
+  OrderState copyWith({
+    Order? activeOrder,
+    List<Order>? orderHistory,
+    bool? isLoading,
+    String? error,
+  }) {
+    return OrderState(
+      activeOrder: activeOrder,
+      orderHistory: orderHistory ?? this.orderHistory,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+    );
   }
   
-  final repository = ref.watch(orderRepositoryProvider);
-  return repository.getOrderHistory();
-});
+  // Helper methods
+  bool get hasActiveOrder => activeOrder != null;
+  int get cartItemCount => activeOrder?.items.fold(0, (sum, item) => sum! + item.quantity) ?? 0;
+  double get cartSubtotal => activeOrder?.subtotal ?? 0.0;
+  double get cartTotal => activeOrder?.total ?? 0.0;
+}
 
-// NotifierProvider for cart operations
-class OrderNotifier extends AsyncNotifier<Order?> {
-  @override
-  Future<Order?> build() async {
-    final user = ref.read(authProvider);
-    
-    // If no user, return null
-    if (user == null) {
-      return null;
-    }
-    
-    final repository = ref.read(orderRepositoryProvider);
-    return repository.getActiveOrder();
+// StateNotifier for order management
+class OrderNotifier extends StateNotifier<OrderState> {
+  final OrderRepository _repository;
+  final Ref _ref;
+
+  OrderNotifier(this._repository, this._ref) : super(OrderState()) {
+    // Initialize by fetching active order
+    refreshActiveOrder();
   }
-  
-  // Check if user is authenticated before operations
+
+  // Check if user is authenticated
   void _checkAuth() {
-    final user = ref.read(authProvider);
+    final user = _ref.read(authProvider);
     if (user == null) {
       print('User must be logged in to perform this action');
       throw Exception('User must be logged in to perform this action');
     }
   }
-  
-  // Create a new order
- Future<void> createOrder({  required String restaurantId,
-    required Address restaurantAddress,
-    required Address deliveryAddress}) async {
-  _checkAuth();
-  
-  state = const AsyncValue.loading();
-  
-  state = await AsyncValue.guard(() async {
+
+  // Refresh the active order
+  Future<void> refreshActiveOrder() async {
+    // Skip if not logged in
+    final user = _ref.read(authProvider);
+    if (user == null) return;
+    
+    state = state.copyWith(isLoading: true, error: null);
+    
     try {
-      final repository = ref.read(orderRepositoryProvider);
-        
-      print("Creating new order with restaurantId: $restaurantId");
-      final result = await repository.createOrder(
-        restaurantId: restaurantId,
-        restaurantAddress: restaurantAddress,
-        deliveryAddress: deliveryAddress,
+      final activeOrder = await _repository.getActiveOrder();
+      
+      state = state.copyWith(
+        activeOrder: activeOrder,
+        isLoading: false,
+      );
+    } catch (e) {
+      print('Error fetching active order: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to fetch active order: $e',
+      );
+    }
+  }
+
+  // Load order history
+  Future<void> loadOrderHistory() async {
+    _checkAuth();
+    
+    state = state.copyWith(isLoading: true, error: null);
+    
+    try {
+      final history = await _repository.getOrderHistory();
+      
+      state = state.copyWith(
+        orderHistory: history,
+        isLoading: false,
+      );
+    } catch (e) {
+      print('Error fetching order history: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to fetch order history: $e',
+      );
+    }
+  }
+
+  // Create a new order
+  Future<bool> createOrder() async {
+    _checkAuth();
+    
+    // Check if there's already an active order
+    if (state.activeOrder != null) {
+      state = state.copyWith(
+        error: 'Vous avez déjà une commande active',
+      );
+      return false;
+    }
+    
+    state = state.copyWith(isLoading: true, error: null);
+    
+    try {
+      // The repository now handles all the logic for getting restaurant and address data
+      final newOrder = await _repository.createOrder();
+      
+      state = state.copyWith(
+        activeOrder: newOrder,
+        isLoading: false,
       );
       
-      print("Order creation completed successfully");
-      return result;
+      return true;
     } catch (e) {
-      print("Error in createOrder: $e");
-      rethrow;
+      print("Error creating order: $e");
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Erreur lors de la création de la commande: $e',
+      );
+      return false;
     }
-  });
-}
-  
-  // Add item to order
-  Future<void> addItem(MenuItem menuItem, {int quantity = 1}) async {
+  }
 
-  
-  state = const AsyncValue.loading();
-  
-  state = await AsyncValue.guard(() async {
-    // Get the repository
-    final repository = ref.read(orderRepositoryProvider);
+  // Add item to order
+  Future<bool> addItem(MenuItem menuItem, {int quantity = 1}) async {
+    _checkAuth();
     
-    // Get the latest order - don't rely on state.value which might be stale
-    final activeOrder = await repository.getActiveOrder();
-    
-    if (activeOrder == null) {
-      throw Exception('Failed to find active order');
+    try {
+      print("Adding item to cart: ${menuItem.name}, quantity: $quantity");
+      
+      // If no active order, create one first
+      if (state.activeOrder == null) {
+        print("No active order - creating a new one");
+        final created = await createOrder();
+        if (!created) {
+          print("Failed to create order");
+          return false;
+        }
+      }
+      
+      print("Adding item to existing order");
+      state = state.copyWith(isLoading: true, error: null);
+      
+      try {
+        final updatedOrder = await _repository.addItemToOrder(menuItem, quantity: quantity);
+        
+        if (updatedOrder != null) {
+          print("Item added successfully");
+          state = state.copyWith(
+            activeOrder: updatedOrder,
+            isLoading: false,
+          );
+          return true;
+        } else {
+          print("Repository returned null order after adding item");
+          state = state.copyWith(
+            isLoading: false,
+            error: 'Erreur lors de l\'ajout de l\'article au panier',
+          );
+          return false;
+        }
+      } catch (e) {
+        print("Error adding item to order: $e");
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Erreur lors de l\'ajout de l\'article au panier: $e',
+        );
+        return false;
+      }
+    } catch (e) {
+      print("Unexpected error in addItem: $e");
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Erreur inattendue: $e',
+      );
+      return false;
     }
-    
-    // Now add the item to the order
-    return repository.addItemToOrder(menuItem, quantity: quantity);
-  });
-}
+  }
+
   // Update item quantity
-  Future<void> updateItemQuantity(String menuItemId, int quantity) async {
+  Future<bool> updateItemQuantity(String menuItemId, int quantity) async {
     _checkAuth();
     
-    if (state.value == null) {
-      throw Exception('No active order.');
+    if (state.activeOrder == null) {
+      state = state.copyWith(
+        error: 'No active order found',
+      );
+      return false;
     }
     
-    state = const AsyncValue.loading();
+    state = state.copyWith(isLoading: true, error: null);
     
-    state = await AsyncValue.guard(() async {
-      final repository = ref.read(orderRepositoryProvider);
-      return repository.updateItemQuantity(menuItemId, quantity);
-    });
+    try {
+      final updatedOrder = await _repository.updateItemQuantity(menuItemId, quantity);
+      
+      state = state.copyWith(
+        activeOrder: updatedOrder,
+        isLoading: false,
+      );
+      
+      return true;
+    } catch (e) {
+      print('Error updating item quantity: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to update item quantity: $e',
+      );
+      return false;
+    }
   }
-  
+
   // Remove item from order
-  Future<void> removeItem(String menuItemId) async {
+  Future<bool> removeItem(String menuItemId) async {
     _checkAuth();
     
-    if (state.value == null) {
-      throw Exception('No active order.');
+    if (state.activeOrder == null) {
+      state = state.copyWith(
+        error: 'No active order found',
+      );
+      return false;
     }
     
-    state = const AsyncValue.loading();
+    state = state.copyWith(isLoading: true, error: null);
     
-    state = await AsyncValue.guard(() async {
-      final repository = ref.read(orderRepositoryProvider);
-      return repository.removeItem(menuItemId);
-    });
+    try {
+      final updatedOrder = await _repository.removeItem(menuItemId);
+      
+      state = state.copyWith(
+        activeOrder: updatedOrder,
+        isLoading: false,
+      );
+      
+      return true;
+    } catch (e) {
+      print('Error removing item from order: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to remove item from order: $e',
+      );
+      return false;
+    }
   }
-  
+
   // Update order status
-  Future<void> updateOrderStatus(OrderStatus newStatus) async {
+  Future<bool> updateOrderStatus(OrderStatus newStatus) async {
     _checkAuth();
     
-    if (state.value == null) {
-      throw Exception('No active order.');
+    if (state.activeOrder == null) {
+      state = state.copyWith(
+        error: 'No active order found',
+      );
+      return false;
     }
     
-    state = const AsyncValue.loading();
+    state = state.copyWith(isLoading: true, error: null);
     
-    state = await AsyncValue.guard(() async {
-      final repository = ref.read(orderRepositoryProvider);
-      return repository.updateOrderStatus(newStatus);
-    });
+    try {
+      final updatedOrder = await _repository.updateOrderStatus(newStatus);
+      
+      state = state.copyWith(
+        activeOrder: updatedOrder,
+        isLoading: false,
+      );
+      
+      return true;
+    } catch (e) {
+      print('Error updating order status: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to update order status: $e',
+      );
+      return false;
+    }
   }
-  
+
   // Submit order for processing
-  Future<void> submitOrder() async {
+  Future<bool> submitOrder() async {
     _checkAuth();
     
-    if (state.value == null) {
-      throw Exception('No active order to submit.');
+    if (state.activeOrder == null) {
+      state = state.copyWith(
+        error: 'No active order to submit',
+      );
+      return false;
     }
     
     // Only submit if it's a draft
-    if (state.value!.status != OrderStatus.draft) {
-      throw Exception('Order has already been submitted.');
+    if (state.activeOrder!.status != OrderStatus.draft) {
+      state = state.copyWith(
+        error: 'Order has already been submitted',
+      );
+      return false;
     }
     
-    // Update status to pending
-    await updateOrderStatus(OrderStatus.pending);
+    return updateOrderStatus(OrderStatus.pending);
   }
-  
+
   // Cancel order
-  Future<void> cancelOrder() async {
+  Future<bool> cancelOrder() async {
     _checkAuth();
     
-    if (state.value == null) {
-      throw Exception('No active order to cancel.');
+    if (state.activeOrder == null) {
+      state = state.copyWith(
+        error: 'No active order to cancel',
+      );
+      return false;
     }
     
-    state = const AsyncValue.loading();
+    state = state.copyWith(isLoading: true, error: null);
     
-    state = await AsyncValue.guard(() async {
-      final repository = ref.read(orderRepositoryProvider);
-      await repository.cancelActiveOrder();
-      return null;
-    });
+    try {
+      await _repository.cancelActiveOrder();
+      
+      state = state.copyWith(
+        activeOrder: null,
+        isLoading: false,
+      );
+      
+      await loadOrderHistory(); // Refresh order history
+      
+      return true;
+    } catch (e) {
+      print('Error cancelling order: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to cancel order: $e',
+      );
+      return false;
+    }
   }
 }
 
-final orderNotifierProvider = AsyncNotifierProvider<OrderNotifier, Order?>(() {
-  return OrderNotifier();
+// Provider for the order state
+final orderProvider = StateNotifierProvider<OrderNotifier, OrderState>((ref) {
+  final repository = ref.watch(orderRepositoryProvider);
+  return OrderNotifier(repository, ref);
 });
 
-// Helper provider for total items in cart
+// Simpler providers for UI access
+
+// Provider to check if there's an active order
+final hasActiveOrderProvider = Provider<bool>((ref) {
+  final orderState = ref.watch(orderProvider);
+  return orderState.hasActiveOrder;
+});
+
+// Provider for cart item count
 final cartItemCountProvider = Provider<int>((ref) {
-  final orderAsyncValue = ref.watch(activeOrderProvider);
-  
-  return orderAsyncValue.when(
-    data: (order) {
-      if (order == null) return 0;
-      
-      return order.items.fold(0, (total, item) => total + item.quantity);
-    },
-    loading: () => 0,
-    error: (_, __) => 0,
-  );
+  final orderState = ref.watch(orderProvider);
+  return orderState.cartItemCount;
 });
 
-// Helper provider for cart subtotal
+// Provider for cart subtotal
 final cartSubtotalProvider = Provider<double>((ref) {
-  final orderAsyncValue = ref.watch(activeOrderProvider);
-  
-  return orderAsyncValue.when(
-    data: (order) {
-      if (order == null) return 0.0;
-      return order.subtotal;
-    },
-    loading: () => 0.0,
-    error: (_, __) => 0.0,
-  );
+  final orderState = ref.watch(orderProvider);
+  return orderState.cartSubtotal;
 });
 
-// In order_provider.dart, add these providers
+// Provider for cart total
+final cartTotalProvider = Provider<double>((ref) {
+  final orderState = ref.watch(orderProvider);
+  return orderState.cartTotal;
+});
 
-// Provider for current restaurant ID
-final currentRestaurantIdProvider = StateProvider<String?>((ref) => null);
+// Provider to get order error state
+final orderErrorProvider = Provider<String?>((ref) {
+  final orderState = ref.watch(orderProvider);
+  return orderState.error;
+});
 
-// Provider for current restaurant address
-final currentRestaurantAddressProvider = StateProvider<Address?>((ref) => null);
+// Provider to get order loading state
+final orderLoadingProvider = Provider<bool>((ref) {
+  final orderState = ref.watch(orderProvider);
+  return orderState.isLoading;
+});
 
-// Modified add to cart function that doesn't need restaurant data passed to each item
-final addToCartFunctionProvider = Provider<Future<void> Function(MenuItem)>((ref) {
-  return (MenuItem menuItem) async {
-    final user = ref.read(authProvider);
-    if (user == null) {
-      throw Exception('User must be logged in');
-    }
-    
-    final restaurantId = ref.read(currentRestaurantIdProvider);
-    final restaurantAddress = ref.read(currentRestaurantAddressProvider);
-    
-    if (restaurantId == null || restaurantAddress == null) {
-      throw Exception('Restaurant information not available');
-    }
-    
-    final orderNotifier = ref.read(orderNotifierProvider.notifier);
-    final activeOrder = await ref.read(activeOrderProvider.future);
-    
-    // Create order if needed
-    if (activeOrder == null) {
-      // For demo purposes, create a dummy delivery address
-      final deliveryAddress = Address(
-        id: 'user-addr-1',
-        label: 'Home',
-        street: '123 Rue Ste-Catherine',
-        postalCode: 'H2X 1Z4',
-        city: 'Montréal',
-        additionalInfo: 'Apt 401',
-        createdAt: DateTime.now(),
-      );
-      
-      await orderNotifier.createOrder(
-        restaurantId: restaurantId,
-        restaurantAddress: restaurantAddress,
-        deliveryAddress: deliveryAddress,
-      );
-    }
-    
-    // Add the item
-    return orderNotifier.addItem(menuItem);
+// Provider to check if an order can be created
+final canCreateOrderProvider = Provider<bool>((ref) {
+  final hasActiveOrder = ref.watch(hasActiveOrderProvider);
+  if (hasActiveOrder) return false;
+  
+  final hasSelectedRestaurant = ref.watch(hasSelectedRestaurantProvider);
+  final hasSelectedAddress = ref.watch(hasSelectedAddressProvider);
+  
+  return hasSelectedRestaurant && hasSelectedAddress;
+});
+
+// Simplified add to cart function
+final addToCartFunctionProvider = Provider<Future<bool> Function(MenuItem, {int quantity})>((ref) {
+  return (MenuItem menuItem, {int quantity = 1}) {
+    final orderNotifier = ref.read(orderProvider.notifier);
+    return orderNotifier.addItem(menuItem, quantity: quantity);
   };
 });

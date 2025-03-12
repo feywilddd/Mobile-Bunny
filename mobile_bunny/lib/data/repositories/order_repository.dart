@@ -3,10 +3,16 @@ import 'dart:async';
 import 'package:mobile_bunny/data/models/order.dart' as models;
 import 'package:mobile_bunny/data/models/address.dart';
 import 'package:mobile_bunny/data/models/menu_item.dart';
+import 'package:mobile_bunny/data/models/restaurant.dart';
+import 'package:mobile_bunny/data/repositories/restaurant_repository.dart';
+import 'package:mobile_bunny/data/repositories/address_repository.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class OrderRepository {
   final FirebaseFirestore _firestore;
   final String _userId;
+  final RestaurantRepository _restaurantRepository;
+  final AddressRepository _addressRepository;
   
   // Collection names
   static const String _ordersCollection = 'orders';
@@ -15,9 +21,20 @@ class OrderRepository {
   OrderRepository({
     required String userId,
     FirebaseFirestore? firestore,
+    FirebaseAuth? auth,
+    RestaurantRepository? restaurantRepository,
+    AddressRepository? addressRepository,
   }) : 
     _userId = userId,
-    _firestore = firestore ?? FirebaseFirestore.instance;
+    _firestore = firestore ?? FirebaseFirestore.instance,
+    _restaurantRepository = restaurantRepository ?? RestaurantRepository(
+      firestore: firestore,
+      auth: auth ?? FirebaseAuth.instance,
+    ),
+    _addressRepository = addressRepository ?? AddressRepository(
+      firestore: firestore,
+      auth: auth ?? FirebaseAuth.instance,
+    );
 
   // Reference to the active order document for this user
   DocumentReference get _activeOrderRef => 
@@ -70,12 +87,8 @@ class OrderRepository {
     });
   }
   
-  // Create a new order
-  Future<models.Order> createOrder({
-    required String restaurantId,
-    required Address restaurantAddress,
-    required Address deliveryAddress,
-  }) async {
+  // Create a new order using selected restaurant and delivery address
+  Future<models.Order> createOrder() async {
     print("Creating order in Firestore with userId: $_userId");
     
     // Check if there's already an active order
@@ -85,10 +98,53 @@ class OrderRepository {
       throw Exception('User already has an active order. Please complete or cancel it first.');
     }
     
+    // Get the selected restaurant ID
+    final selectedRestaurantId = await _restaurantRepository.getSelectedRestaurantId();
+    if (selectedRestaurantId == null) {
+      throw Exception('No restaurant selected. Please select a restaurant first.');
+    }
+    
+    print("Selected restaurant ID: $selectedRestaurantId");
+    
+    // Get restaurant data directly from Firestore for reliability
+    final restaurantDoc = await _firestore.collection('Restaurants').doc(selectedRestaurantId).get();
+    
+    if (!restaurantDoc.exists) {
+      throw Exception('Selected restaurant not found.');
+    }
+    
+    final restaurantData = restaurantDoc.data()!;
+    
+    // Get the selected delivery address
+    final selectedAddressId = await _addressRepository.getSelectedAddressId();
+    if (selectedAddressId == null) {
+      throw Exception('No delivery address selected. Please select a delivery address first.');
+    }
+    
+    final addresses = await _addressRepository.fetchAddresses();
+    final deliveryAddress = addresses.firstWhere(
+      (address) => address.id == selectedAddressId,
+      orElse: () => throw Exception('Selected delivery address not found.')
+    );
+    
+    // Create restaurant address manually from Firestore data
+    final restaurantAddress = Address(
+      id: selectedRestaurantId,
+      label: 'Restaurant',
+      street: restaurantData['address'] ?? 'Unknown address',
+      postalCode: '',  // Not available in restaurant data
+      city: 'Joliette', // Default city
+      additionalInfo: '',
+      createdAt: DateTime.now(),
+    );
+    
+    print("Restaurant address: ${restaurantAddress.street}");
+    print("Delivery address: ${deliveryAddress.street}");
+    
     // Create a new order
     final newOrder = models.Order.create(
       userId: _userId,
-      restaurantId: restaurantId,
+      restaurantId: selectedRestaurantId,
       restaurantAddress: restaurantAddress,
       deliveryAddress: deliveryAddress,
     );
@@ -130,14 +186,27 @@ class OrderRepository {
   
   // Add an item to the active order
   Future<models.Order?> addItemToOrder(MenuItem menuItem, {int quantity = 1}) async {
-    final activeOrder = await getActiveOrder();
+    print("Adding item to order: ${menuItem.name}, quantity: $quantity");
     
-    if (activeOrder == null) {
-      throw Exception('No active order found.');
+    try {
+      // Get the active order
+      final activeOrder = await getActiveOrder();
+      
+      if (activeOrder == null) {
+        print("No active order found, creating one first");
+        // Create an order first, then add the item
+        final newOrder = await createOrder();
+        final updatedOrder = newOrder.addItem(menuItem, quantity: quantity);
+        return await updateOrder(updatedOrder);
+      }
+      
+      print("Adding item to existing order: ${activeOrder.id}");
+      final updatedOrder = activeOrder.addItem(menuItem, quantity: quantity);
+      return await updateOrder(updatedOrder);
+    } catch (e) {
+      print("Error adding item to order: $e");
+      rethrow;
     }
-    
-    final updatedOrder = activeOrder.addItem(menuItem, quantity: quantity);
-    return await updateOrder(updatedOrder);
   }
   
   // Update item quantity in the active order
@@ -227,5 +296,11 @@ class OrderRepository {
       print('Error fetching order history: $e');
       return [];
     }
+  }
+  
+  // Check if a restaurant is selected
+  Future<bool> isRestaurantSelected() async {
+    final selectedRestaurantId = await _restaurantRepository.getSelectedRestaurantId();
+    return selectedRestaurantId != null;
   }
 }

@@ -2,8 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mobile_bunny/data/models/address.dart';
 import 'package:mobile_bunny/data/models/menu_item.dart';
 
-// You already have Address and MenuItem classes
-
 class OrderItem {
   final String menuItemId;
   final String name;
@@ -136,6 +134,9 @@ class Order {
     required Address deliveryAddress,
   }) {
     final now = DateTime.now();
+    // Default delivery fee will be updated from restaurant when recalculating
+    const defaultDeliveryFee = 0.0;
+    
     return Order(
       id: '', // Will be assigned by Firestore
       userId: userId,
@@ -147,7 +148,7 @@ class Order {
       subtotal: 0,
       taxTPS: 0,
       taxTVQ: 0,
-      deliveryFee: 0,
+      deliveryFee: defaultDeliveryFee,
       total: 0,
       createdAt: now,
       updatedAt: now,
@@ -298,6 +299,23 @@ class Order {
       subtotal: newSubtotal,
       taxTPS: newTaxTPS,
       taxTVQ: newTaxTVQ,
+      total: newTotal,
+    );
+  }
+  
+  // Update delivery fee and recalculate total
+  Order updateDeliveryFee(double newDeliveryFee) {
+    if (newDeliveryFee == deliveryFee) {
+      return this;
+    }
+    
+    const tpsRate = 0.05; // 5% TPS
+    const tvqRate = 0.09975; // 9.975% TVQ
+    
+    final newTotal = subtotal + taxTPS + taxTVQ + newDeliveryFee;
+    
+    return copyWith(
+      deliveryFee: newDeliveryFee,
       total: newTotal,
     );
   }

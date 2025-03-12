@@ -5,12 +5,7 @@ import 'package:mobile_bunny/data/models/order.dart';
 import 'package:mobile_bunny/presentation/pages/login_page.dart';
 import 'package:mobile_bunny/presentation/providers/auth_provider.dart';
 import 'package:mobile_bunny/presentation/providers/order_provider.dart';
-
-// Import your models and providers
-// import '../providers/auth_provider.dart';
-// import '../models/order_model.dart';
-// import '../providers/order_provider.dart';
-// import '../pages/login_page.dart';
+import 'package:mobile_bunny/presentation/widgets/address_card.dart';
 
 class BasketPage extends ConsumerWidget {
   const BasketPage({Key? key}) : super(key: key);
@@ -20,8 +15,11 @@ class BasketPage extends ConsumerWidget {
     // Check if user is logged in
     final user = ref.watch(authProvider);
     
-    // Watch the active order stream for real-time updates
-    final orderAsyncValue = ref.watch(activeOrderStreamProvider);
+    // Get order state
+    final orderState = ref.watch(orderProvider);
+    final order = orderState.activeOrder;
+    final isLoading = orderState.isLoading;
+    final error = orderState.error;
     
     return Scaffold(
       backgroundColor: const Color(0xFF212529),
@@ -44,29 +42,23 @@ class BasketPage extends ConsumerWidget {
       ),
       body: user == null 
           ? _buildLoginPrompt(context)
-          : orderAsyncValue.when(
-              data: (order) {
-                if (order == null) {
-                  return const Center(
-                    child: Text(
-                      'Votre panier est vide',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  );
-                }
-                
-                return BasketContent(order: order);
-              },
-              loading: () => const Center(
-                child: CircularProgressIndicator(),
-              ),
-              error: (error, stackTrace) => Center(
-                child: Text(
-                  'Erreur: ${error.toString()}',
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-            ),
+          : isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : error != null
+                  ? Center(
+                      child: Text(
+                        'Erreur: $error',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    )
+                  : order == null
+                      ? const Center(
+                          child: Text(
+                            'Votre panier est vide',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        )
+                      : BasketContent(order: order),
     );
   }
   
@@ -116,7 +108,7 @@ class BasketContent extends ConsumerWidget {
   
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final orderNotifier = ref.watch(orderNotifierProvider.notifier);
+    final orderNotifier = ref.watch(orderProvider.notifier);
     
     return SafeArea(
       child: Column(
@@ -129,7 +121,7 @@ class BasketContent extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Delivery Address Card
-                    AddressCard(address: order.deliveryAddress),
+                    AddressCard(),
                     const SizedBox(height: 24),
                     
                     // Order Items
@@ -168,72 +160,6 @@ class BasketContent extends ConsumerWidget {
           // Bottom Action Bar
           if (order.items.isNotEmpty)
             BottomActionBar(order: order),
-        ],
-      ),
-    );
-  }
-}
-
-class AddressCard extends StatelessWidget {
-  final Address address;
-  
-  const AddressCard({Key? key, required this.address}) : super(key: key);
-  
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF2C2C2C),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.location_on,
-            color: Colors.red,
-            size: 24,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  address.street,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  '${address.postalCode}, ${address.city}',
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14,
-                  ),
-                ),
-                if (address.additionalInfo.isNotEmpty)
-                  Text(
-                    address.additionalInfo,
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              // Navigate to address selection/edit screen
-            },
-            child: const Text(
-              'Changer',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
         ],
       ),
     );
@@ -424,7 +350,8 @@ class BottomActionBar extends ConsumerWidget {
   
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final orderNotifier = ref.watch(orderNotifierProvider.notifier);
+    final orderNotifier = ref.watch(orderProvider.notifier);
+    final isLoading = ref.watch(orderLoadingProvider);
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -452,19 +379,27 @@ class BottomActionBar extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(25),
                 ),
               ),
-              onPressed: () async {
+              onPressed: isLoading ? null : () async {
                 if (order.status == OrderStatus.draft) {
                   try {
-                    await orderNotifier.submitOrder();
-                    // Navigate to order confirmation page
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Commande envoyée avec succès!')),
-                    );
+                    final success = await orderNotifier.submitOrder();
+                    if (success && context.mounted) {
+                      // Navigate to order confirmation page
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Commande envoyée avec succès!')),
+                      );
+                    } else if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Erreur lors de l\'envoi de la commande')),
+                      );
+                    }
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Erreur: ${e.toString()}')),
-                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Erreur: ${e.toString()}')),
+                      );
+                    }
                   }
                 }
               },

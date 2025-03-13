@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/auth_provider.dart';
 import '../providers/menu_provider.dart';
 import '../providers/profile_provider.dart';
 import '../providers/filter_provider.dart';
@@ -49,7 +48,6 @@ class _MenuPageState extends ConsumerState<MenuPage> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authProvider);
     final menuAsyncValue = ref.watch(menuProvider);
    
     ref.watch(profileProvider);
@@ -57,7 +55,7 @@ class _MenuPageState extends ConsumerState<MenuPage> {
    
     if (!isInitialized) {
       return Scaffold(
-        appBar: const CustomAppBar(),
+        appBar: const CustomAppBar(showArrow: false),
         bottomNavigationBar: const CustomBottomNavigationBar(),
         backgroundColor: const Color(0xFF212529),
         body: const Center(child: CircularProgressIndicator()),
@@ -65,7 +63,7 @@ class _MenuPageState extends ConsumerState<MenuPage> {
     }
    
     return Scaffold(
-      appBar: const CustomAppBar(),
+      appBar: const CustomAppBar(showArrow: false),
       bottomNavigationBar: const CustomBottomNavigationBar(),
       backgroundColor: const Color(0xFF212529),
       body: menuAsyncValue.when(

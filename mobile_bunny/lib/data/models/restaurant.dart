@@ -1,36 +1,40 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'address.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class Restaurant {
   final String id;
   final String name;
-  final String address; // Raw address string
-  final GeoPoint location; // Geo coordinates
-  final DateTime openingTime;
-  final DateTime closingTime;
+  final String address;
+  final String? phoneNumber;
+  final String? imageUrl;
+  final List<String> categories;
+  final double rating;
+  final int reviewCount;
+  final GeoPoint? location;  // Use GeoPoint instead of separate lat/lng
   
   Restaurant({
     required this.id,
     required this.name,
     required this.address,
-    required this.location,
-    required this.openingTime,
-    required this.closingTime,
+    this.phoneNumber,
+    this.imageUrl,
+    this.categories = const [],
+    this.rating = 0.0,
+    this.reviewCount = 0,
+    this.location,  // Use GeoPoint
   });
-  
-  bool get isOpen {
-    final now = DateTime.now();
-    return now.isAfter(openingTime) && now.isBefore(closingTime);
-  }
   
   factory Restaurant.fromMap(String id, Map<String, dynamic> map) {
     return Restaurant(
       id: id,
       name: map['name'] ?? '',
       address: map['address'] ?? '',
-      location: map['location'] ?? GeoPoint(0, 0),
-      openingTime: (map['opening_time'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      closingTime: (map['closing_time'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      phoneNumber: map['phoneNumber'],
+      imageUrl: map['imageUrl'],
+      categories: List<String>.from(map['categories'] ?? []),
+      rating: (map['rating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: (map['reviewCount'] as num?)?.toInt() ?? 0,
+      location: map['location'] as GeoPoint?,  // Parse GeoPoint directly
     );
   }
   
@@ -38,22 +42,43 @@ class Restaurant {
     return {
       'name': name,
       'address': address,
-      'location': location,
-      'opening_time': openingTime,
-      'closing_time': closingTime,
+      'phoneNumber': phoneNumber,
+      'imageUrl': imageUrl,
+      'categories': categories,
+      'rating': rating,
+      'reviewCount': reviewCount,
+      'location': location,  // Store as GeoPoint
     };
   }
   
-  // Helper to create Address object for the Order model
-  Address toOrderAddress() {
-    return Address(
-      id: id, // Using restaurant ID as address ID
-      label: name, // Using restaurant name as label
-      street: address, // Full address string
-      postalCode: '', // Not available in this model
-      city: '', // Not available in this model
-      additionalInfo: '',
-      createdAt: DateTime.now(),
+  // Helper method to get LatLng for Google Maps
+  LatLng? getLatLng() {
+    if (location == null) return null;
+    return LatLng(location!.latitude, location!.longitude);
+  }
+  
+  // Add a copyWith method if you don't already have one
+  Restaurant copyWith({
+    String? id,
+    String? name,
+    String? address,
+    String? phoneNumber,
+    String? imageUrl,
+    List<String>? categories,
+    double? rating,
+    int? reviewCount,
+    GeoPoint? location,
+  }) {
+    return Restaurant(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      address: address ?? this.address,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      imageUrl: imageUrl ?? this.imageUrl,
+      categories: categories ?? this.categories,
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
+      location: location ?? this.location,
     );
   }
 }

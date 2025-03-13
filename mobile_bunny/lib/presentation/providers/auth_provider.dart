@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 final authProvider = StateNotifierProvider<AuthNotifier, User?>((ref) {
   return AuthNotifier();
@@ -8,6 +9,7 @@ final authProvider = StateNotifierProvider<AuthNotifier, User?>((ref) {
 
 class AuthNotifier extends StateNotifier<User?> {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   AuthNotifier() : super(null) {
@@ -32,6 +34,19 @@ class AuthNotifier extends StateNotifier<User?> {
 
       final UserCredential userCredential =
           await _firebaseAuth.signInWithCredential(credential);
+      
+      User? user = userCredential.user;
+
+      if (user != null) {
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+        if (!userDoc.exists) {
+          await _firestore.collection('users').doc(user.uid).set({
+            'uid': user.uid,
+            'email': user.email,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
 
       return userCredential.user;
     } catch (e) {
@@ -43,10 +58,24 @@ class AuthNotifier extends StateNotifier<User?> {
   Future<void> signInWithEmail(String email, String password) async {
     try {
       // Call Firebase Authentication to sign in
-      await _firebaseAuth.signInWithEmailAndPassword(
+      UserCredential userCredential = await _firebaseAuth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+
+      User? user = userCredential.user;
+
+      if (user != null) {
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+        if (!userDoc.exists) {
+          await _firestore.collection('users').doc(user.uid).set({
+            'uid': user.uid,
+            'email': user.email,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
     } on FirebaseAuthException catch (e) {
       // Handle specific FirebaseAuth errors
       if (e.code == 'user-not-found') {
@@ -71,8 +100,27 @@ class AuthNotifier extends StateNotifier<User?> {
 
   Future<void> signUp(String email, String password) async {
     try {
-      await _firebaseAuth.createUserWithEmailAndPassword(
+       final UserCredential userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
           email: email, password: password);
+
+      User? user = userCredential.user;
+
+      if (user != null) {
+        // Vérification si l'utilisateur existe déjà dans Firestore
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+        if (!userDoc.exists) {
+          // Ajout de l'utilisateur à Firestore seulement s'il n'existe pas
+          await _firestore.collection('users').doc(user.uid).set({
+            'uid': user.uid,
+            'email': user.email,
+            'displayName': user.displayName ?? "",
+            'photoURL': user.photoURL ?? "",
+            'role': 'user', // Tu peux modifier ce rôle plus tard
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
       print("User registered successfully"); // Debugging purpose
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {

@@ -71,11 +71,7 @@ class OrderNotifier extends StateNotifier<OrderState> {
   }
 
   // Refresh the active order
-  Future<void> refreshActiveOrder() async {
-    // Skip if not logged in
-    final user = _ref.read(authProvider);
-    if (user == null) return;
-    
+   Future<void> refreshActiveOrder() async {
     state = state.copyWith(isLoading: true, error: null);
     
     try {
@@ -86,10 +82,10 @@ class OrderNotifier extends StateNotifier<OrderState> {
         isLoading: false,
       );
     } catch (e) {
-      print('Error fetching active order: $e');
+      print('Error refreshing active order: $e');
       state = state.copyWith(
         isLoading: false,
-        error: 'Failed to fetch active order: $e',
+        error: 'Failed to refresh active order: $e',
       );
     }
   }
@@ -313,15 +309,44 @@ class OrderNotifier extends StateNotifier<OrderState> {
       return false;
     }
     
-    // Only submit if it's a draft
-    if (state.activeOrder!.status != OrderStatus.draft) {
+    state = state.copyWith(isLoading: true, error: null);
+    
+    try {
+      print("Setting order status to delivered");
+      // Set order status to delivered
+      final updatedOrder = await _repository.updateOrderStatus(OrderStatus.delivered);
+      
+      if (updatedOrder != null) {
+        print("Order status updated successfully");
+        
+        // Don't complete the active order here - we'll do it after navigation in UI
+        // This ensures the tracking page can access the order data if needed
+        
+        state = state.copyWith(
+          activeOrder: updatedOrder, // Keep the updated order until navigation completes
+          isLoading: false,
+        );
+        
+        // Refresh order history to include the new delivered order
+        await loadOrderHistory();
+        
+        return true;
+      } else {
+        print("Failed to update order status");
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Failed to update order status',
+        );
+        return false;
+      }
+    } catch (e) {
+      print('Error submitting order: $e');
       state = state.copyWith(
-        error: 'Order has already been submitted',
+        isLoading: false,
+        error: 'Failed to submit order: $e',
       );
       return false;
     }
-    
-    return updateOrderStatus(OrderStatus.pending);
   }
 
   // Cancel order
@@ -357,6 +382,59 @@ class OrderNotifier extends StateNotifier<OrderState> {
       return false;
     }
   }
+
+  Future<bool> completeAndDeliverOrder() async {
+    _checkAuth();
+    
+    if (state.activeOrder == null) {
+      state = state.copyWith(
+        error: 'No active order to submit',
+      );
+      return false;
+    }
+    
+    state = state.copyWith(isLoading: true, error: null);
+    
+    try {
+      print("Setting order status to delivered");
+      // Set order status to delivered
+      final updatedOrder = await _repository.updateOrderStatus(OrderStatus.delivered);
+      
+      if (updatedOrder != null) {
+        print("Order status updated successfully");
+        
+        // Complete the active order
+        print("Completing active order");
+        await _repository.completeActiveOrder();
+        print("Active order completed successfully");
+        
+        state = state.copyWith(
+          activeOrder: null, // Order is now complete
+          isLoading: false,
+        );
+        
+        // Refresh order history 
+        //await loadOrderHistory();
+        
+        return true;
+      } else {
+        print("Failed to update order status");
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Failed to update order status',
+        );
+        return false;
+      }
+    } catch (e) {
+      print('Error completing order: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to complete order: $e',
+      );
+      return false;
+    }
+  }
+  
 }
 
 // Provider for the order state
@@ -365,7 +443,7 @@ final orderProvider = StateNotifierProvider<OrderNotifier, OrderState>((ref) {
   return OrderNotifier(repository, ref);
 });
 
-// Simpler providers for UI access
+// Simpler providers for UI accessmitOr
 
 // Provider to check if there's an active order
 final hasActiveOrderProvider = Provider<bool>((ref) {

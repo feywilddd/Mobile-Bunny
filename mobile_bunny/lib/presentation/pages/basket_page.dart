@@ -1,11 +1,38 @@
+import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:mobile_bunny/data/models/address.dart';
 import 'package:mobile_bunny/data/models/order.dart';
 import 'package:mobile_bunny/presentation/pages/login_page.dart';
+import 'package:mobile_bunny/presentation/pages/tracking_page.dart';
+import 'package:mobile_bunny/presentation/providers/address_provider.dart';
 import 'package:mobile_bunny/presentation/providers/auth_provider.dart';
 import 'package:mobile_bunny/presentation/providers/order_provider.dart';
 import 'package:mobile_bunny/presentation/widgets/address_card.dart';
+
+// Simple utility provider to mark orders as completed
+final markOrderCompletedProvider = Provider<Future<void> Function()>((ref) {
+  return () async {
+    try {
+      // Get the notifier
+      final orderNotifier = ref.read(orderProvider.notifier);
+      
+      // Set status to delivered
+      await orderNotifier.updateOrderStatus(OrderStatus.delivered);
+      
+      // Get the repository
+      final repository = ref.read(orderRepositoryProvider);
+      
+      // Complete the active order
+      await repository.completeActiveOrder();
+      
+      print("Order marked as delivered and completed successfully");
+    } catch (e) {
+      print("Error marking order as completed: $e");
+    }
+  };
+});
 
 class BasketPage extends ConsumerWidget {
   const BasketPage({Key? key}) : super(key: key);
@@ -350,8 +377,30 @@ class BottomActionBar extends ConsumerWidget {
   
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final orderNotifier = ref.watch(orderProvider.notifier);
     final isLoading = ref.watch(orderLoadingProvider);
+    final markOrderCompleted = ref.watch(markOrderCompletedProvider);
+    
+    // Simplified submission that just navigates
+    void handleSubmitOrder() {
+      try {
+        // 1. Show processing message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Commande envoyée avec succès!')),
+        );
+        
+        // 2. First navigate to tracking page immediately
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (ctx) => TrackingCompletionPage(
+              onComplete: markOrderCompleted,
+            ),
+          ),
+        );
+      } catch (e) {
+        print("Navigation error: $e");
+      }
+    }
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -379,30 +428,7 @@ class BottomActionBar extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(25),
                 ),
               ),
-              onPressed: isLoading ? null : () async {
-                if (order.status == OrderStatus.draft) {
-                  try {
-                    final success = await orderNotifier.submitOrder();
-                    if (success && context.mounted) {
-                      // Navigate to order confirmation page
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Commande envoyée avec succès!')),
-                      );
-                    } else if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Erreur lors de l\'envoi de la commande')),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Erreur: ${e.toString()}')),
-                      );
-                    }
-                  }
-                }
-              },
+              onPressed: isLoading ? null : handleSubmitOrder,
               child: const Text(
                 'Commander',
                 style: TextStyle(
@@ -414,6 +440,233 @@ class BottomActionBar extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class TrackingCompletionPage extends ConsumerStatefulWidget {
+  final Future<void> Function() onComplete;
+  
+  const TrackingCompletionPage({
+    Key? key, 
+    required this.onComplete,
+  }) : super(key: key);
+  
+  @override
+  ConsumerState<TrackingCompletionPage> createState() => _TrackingCompletionPageState();
+}
+
+class _TrackingCompletionPageState extends ConsumerState<TrackingCompletionPage> {
+  bool _isProcessing = true;
+  bool _hasError = false;
+  String _errorMessage = '';
+  
+  // Default coordinates to use as fallback
+  final LatLng _defaultRestaurantPosition = LatLng(46.03115353128858, -73.44116406758411);
+  final LatLng _defaultClientPosition = LatLng(46.02358, -73.43292);
+  
+  @override
+  void initState() {
+    super.initState();
+    // Process the order after the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _completeOrderAndNavigate();
+    });
+  }
+  
+  // Get coordinates from the active order
+  Future<Map<String, LatLng>> _getCoordinates() async {
+    try {
+      // Get current order
+      final orderState = ref.read(orderProvider);
+      final order = orderState.activeOrder;
+      
+      if (order == null) {
+        print("No active order found, using default coordinates");
+        return {
+          'restaurant': _defaultRestaurantPosition,
+          'client': _defaultClientPosition
+        };
+      }
+      
+      // Variables to store our coordinates
+      LatLng restaurantPosition = _defaultRestaurantPosition;
+      LatLng clientPosition = _defaultClientPosition;
+      
+      // Try to get restaurant coordinates
+      try {
+        // First check if restaurantId is present
+        final restaurantId = order.restaurantId;
+        if (restaurantId.isNotEmpty) {
+          // Try to fetch from Firestore
+          final restaurantDoc = await firestore.FirebaseFirestore.instance
+              .collection('Restaurants')
+              .doc(restaurantId)
+              .get();
+              
+          if (restaurantDoc.exists && restaurantDoc.data() != null) {
+            final data = restaurantDoc.data()!;
+            
+            // Check if location field exists and is a GeoPoint
+            if (data.containsKey('location') && data['location'] is firestore.GeoPoint) {
+              final location = data['location'] as firestore.GeoPoint;
+              restaurantPosition = LatLng(location.latitude, location.longitude);
+              print("Got restaurant coordinates from Firestore: $restaurantPosition");
+            }
+          }
+        }
+      } catch (e) {
+        print("Error fetching restaurant coordinates: $e");
+        // Continue with default coordinates
+      }
+      
+      // Try to get delivery address coordinates
+      try {
+          // Check the address provider for the selected address
+          final addressState = ref.read(addressProvider);
+          final selectedAddressId = addressState.selectedAddressId;
+          
+          if (selectedAddressId != null) {
+            // Try to fetch from Firestore
+            final addressDoc = await firestore.FirebaseFirestore.instance
+                .collection('users')
+                .doc(order.userId)
+                .collection('addresses')
+                .doc(selectedAddressId)
+                .get();
+                
+            if (addressDoc.exists && addressDoc.data() != null) {
+              final data = addressDoc.data()!;
+              
+              // First try 'geoPoint' field
+              if (data.containsKey('geoPoint') && data['geoPoint'] is firestore.GeoPoint) {
+                final location = data['geoPoint'] as firestore.GeoPoint;
+                clientPosition = LatLng(location.latitude, location.longitude);
+                print("Got client coordinates from Firestore (geoPoint): $clientPosition");
+              } 
+              // Fallback to 'location' field for backward compatibility
+              else if (data.containsKey('location') && data['location'] is firestore.GeoPoint) {
+                final location = data['location'] as firestore.GeoPoint;
+                clientPosition = LatLng(location.latitude, location.longitude);
+                print("Got client coordinates from Firestore (location): $clientPosition");
+              } else {
+                // No valid coordinates found in the address document
+                print("No valid coordinates found in address document. Fields available: ${data.keys.join(', ')}");
+              }
+            } else {
+              print("Selected address document does not exist or is empty");
+            }
+          } else {
+            print("No selected address ID found");
+          }
+        } catch (e) {
+          print("Error fetching client coordinates: $e");
+          // Continue with default coordinates
+        }
+      
+      return {
+        'restaurant': restaurantPosition,
+        'client': clientPosition
+      };
+    } catch (e) {
+      print("Error getting coordinates: $e");
+      return {
+        'restaurant': _defaultRestaurantPosition,
+        'client': _defaultClientPosition
+      };
+    }
+  }
+  
+  Future<void> _completeOrderAndNavigate() async {
+    try {
+      // Step 1: Complete the order
+      await widget.onComplete();
+      
+      // Step 2: Get coordinates for tracking
+      final coordinates = await _getCoordinates();
+      
+      // Step 3: Navigate to tracking page
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TrackingPage(
+              restaurantPosition: coordinates['restaurant']!,
+              clientPosition: coordinates['client']!,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print("Error in _completeOrderAndNavigate: $e");
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+          _hasError = true;
+          _errorMessage = e.toString();
+        });
+      }
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF212529),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF212529),
+        elevation: 0,
+        title: const Text(
+          'Traitement de la commande',
+          style: TextStyle(color: Colors.white),
+        ),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: _isProcessing
+          ? const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: Color(0xFFE79686)),
+                SizedBox(height: 20),
+                Text(
+                  'Traitement de votre commande...',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ],
+            )
+          : _hasError
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Erreur lors du traitement de la commande',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                    child: Text(
+                      _errorMessage,
+                      style: const TextStyle(color: Colors.grey, fontSize: 14),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE79686),
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Retour'),
+                  ),
+                ],
+              )
+            : const SizedBox(),
       ),
     );
   }

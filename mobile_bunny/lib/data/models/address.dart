@@ -1,24 +1,28 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+// Update your Address model class to use GeoPoint
 class Address {
   final String id;
   final String label;
   final String street;
   final String postalCode;
   final String city;
-  final String additionalInfo;
+  final String? additionalInfo;
   final DateTime createdAt;
-  final DateTime? updatedAt;
-
+  final GeoPoint? location;  // Use GeoPoint instead of separate lat/lng
+  
   Address({
     required this.id,
     required this.label,
     required this.street,
     required this.postalCode,
     required this.city,
-    this.additionalInfo = '',
+    this.additionalInfo,
     required this.createdAt,
-    this.updatedAt,
+    this.location,  // Use GeoPoint
   });
-
+  
   factory Address.fromMap(String id, Map<String, dynamic> map) {
     return Address(
       id: id,
@@ -26,12 +30,12 @@ class Address {
       street: map['street'] ?? '',
       postalCode: map['postalCode'] ?? '',
       city: map['city'] ?? '',
-      additionalInfo: map['additionalInfo'] ?? '',
-      createdAt: map['createdAt']?.toDate() ?? DateTime.now(),
-      updatedAt: map['updatedAt']?.toDate(),
+      additionalInfo: map['additionalInfo'],
+      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      location: map['location'] as GeoPoint?,  // Parse GeoPoint directly
     );
   }
-
+  
   Map<String, dynamic> toMap() {
     return {
       'label': label,
@@ -40,26 +44,36 @@ class Address {
       'city': city,
       'additionalInfo': additionalInfo,
       'createdAt': createdAt,
-      'updatedAt': updatedAt,
+      'location': location,  // Store as GeoPoint
     };
   }
-
+  
+  // Helper method to get LatLng for Google Maps
+  LatLng? getLatLng() {
+    if (location == null) return null;
+    return LatLng(location!.latitude, location!.longitude);
+  }
+  
+  // Add a copyWith method if you don't already have one
   Address copyWith({
+    String? id,
     String? label,
     String? street,
     String? postalCode,
     String? city,
     String? additionalInfo,
+    DateTime? createdAt,
+    GeoPoint? location,
   }) {
     return Address(
-      id: id,
+      id: id ?? this.id,
       label: label ?? this.label,
       street: street ?? this.street,
       postalCode: postalCode ?? this.postalCode,
       city: city ?? this.city,
       additionalInfo: additionalInfo ?? this.additionalInfo,
-      createdAt: createdAt,
-      updatedAt: DateTime.now(),
+      createdAt: createdAt ?? this.createdAt,
+      location: location ?? this.location,
     );
   }
 }

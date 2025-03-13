@@ -160,8 +160,6 @@ class _RestaurantsPageState extends ConsumerState<RestaurantsPage> {
     setState(() => _isLoading = true);
     
     try {
-      // Initialize Firebase if needed
-      // await Firebase.initializeApp();
 
       // Fetch documents from the "Restaurants" collection
       final QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('Restaurants').get();

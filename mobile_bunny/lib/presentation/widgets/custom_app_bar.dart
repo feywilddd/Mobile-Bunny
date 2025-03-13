@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mobile_bunny/data/models/restaurant.dart';
 import '../providers/auth_provider.dart';
+import '../providers/restaurant_provider.dart';
 import '../pages/login_page.dart';
 import '../pages/user_menu_page.dart';
 
 class CustomAppBar extends ConsumerStatefulWidget implements PreferredSizeWidget {
-  const CustomAppBar({super.key});
+  final bool showArrow;
+  
+  const CustomAppBar({super.key, this.showArrow = false});
 
   @override
   ConsumerState<CustomAppBar> createState() => _CustomAppBarState();
@@ -121,30 +125,116 @@ class _CustomAppBarState extends ConsumerState<CustomAppBar> {
         children: [
           const Icon(Icons.location_on, color: Color(0xFFDE0000)),
           const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                '123 Rue du Resto...',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              Text(
-                'Ouvert jusqu\'à 23 h',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
+          Consumer(
+            builder: (context, ref, child) {
+              final restaurantState = ref.watch(restaurantProvider);
+              final selectedId = restaurantState.selectedRestaurantId;
+              
+              if (selectedId == null) {
+                return const Text(
+                  'Aucun restaurant sélectionné',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                );
+              }
+              
+              // Since we know the ID exists but the restaurant isn't in the list,
+              // fetch it directly from Firestore every time
+              return FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('Restaurants')
+                    .doc(selectedId)
+                    .get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Text(
+                      'Chargement...',
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    );
+                  }
+                  
+                  if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.exists) {
+                    return const Text(
+                      'Restaurant non disponible',
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    );
+                  }
+                  
+                  final data = snapshot.data!.data() as Map<String, dynamic>?;
+                  if (data == null) {
+                    return const Text(
+                      'Données non disponibles',
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    );
+                  }
+                  
+                  final String fullAddress = data['address'] ?? 'Adresse inconnue';
+                  final String address = fullAddress.length > 25 
+                      ? '${fullAddress.substring(0, 22)}...' 
+                      : fullAddress;
+                  
+                  // Get the opening and closing times from Firestore
+final openingTimeRaw = data['opening_time'];
+final closingTimeRaw = data['closing_time'];
+
+// Format the times and determine if the restaurant is currently open
+String openingTime = 'N/A';
+String closingTime = 'N/A';
+bool isOpen = false;
+
+try {
+  if (openingTimeRaw is Timestamp && closingTimeRaw is Timestamp) {
+    // Convert Timestamps to DateTime objects
+    final opening = openingTimeRaw.toDate();
+    final closing = closingTimeRaw.toDate();
+    
+    // Format times for display
+    openingTime = '${opening.hour}:${opening.minute.toString().padLeft(2, '0')}';
+    closingTime = '${closing.hour}:${closing.minute.toString().padLeft(2, '0')}';
+    
+    // Get current time
+    final now = DateTime.now();
+    final currentTimeOfDay = DateTime(
+      opening.year, 
+      opening.month, 
+      opening.day, 
+      now.hour, 
+      now.minute
+    );
+    
+    // Determine if restaurant is open (compare only hours and minutes)
+    isOpen = currentTimeOfDay.isAfter(opening) && currentTimeOfDay.isBefore(closing);
+  }
+} catch (e) {
+  print('Error determining open status: $e');
+}
+                  
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        address,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      Text(
+                        isOpen ? 'Ouvert jusqu\'à $closingTime' : 'Fermé - Ouvre à $openingTime',
+                        style: TextStyle(fontSize: 12, color: isOpen ? Colors.green : Colors.red),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
           ),
         ],
       ),
-      leading: IconButton(
-        icon: const Icon(
-          Icons.arrow_back,
-          color: Colors.white,
-        ),
-        onPressed: () {
-          Navigator.pop(context);
-        },
-      ),
+      leading: widget.showArrow
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            )
+          : null,
       actions: [
         GestureDetector(
           onTap: () {

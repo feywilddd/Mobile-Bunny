@@ -1,8 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile_bunny/data/models/address.dart';
 import 'package:mobile_bunny/data/models/menu_item.dart';
-import 'package:mobile_bunny/data/models/restaurant.dart';
 import 'package:mobile_bunny/presentation/providers/auth_provider.dart';
 import 'package:mobile_bunny/presentation/providers/restaurant_provider.dart';
 import 'package:mobile_bunny/presentation/providers/address_provider.dart';

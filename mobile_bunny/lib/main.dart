@@ -7,7 +7,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'presentation/pages/home_menu_page.dart';
 import 'presentation/pages/login_page.dart';
-import 'presentation/pages/home_menu_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +21,7 @@ void main() async {
   // Initialize Firebase only once
    await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
-    name: 'mobileBunny',
+    
   );
 
   runApp(const MyApp());

@@ -8,7 +8,7 @@ import 'package:mobile_bunny/presentation/providers/order_provider.dart';
 import 'package:mobile_bunny/presentation/widgets/address_card.dart';
 
 class BasketPage extends ConsumerWidget {
-  const BasketPage({Key? key}) : super(key: key);
+  const BasketPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -104,7 +104,7 @@ class BasketPage extends ConsumerWidget {
 class BasketContent extends ConsumerWidget {
   final Order order;
   
-  const BasketContent({Key? key, required this.order}) : super(key: key);
+  const BasketContent({super.key, required this.order});
   
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -172,11 +172,11 @@ class OrderItemWidget extends StatelessWidget {
   final VoidCallback onRemove;
   
   const OrderItemWidget({
-    Key? key,
+    super.key,
     required this.item,
     required this.onUpdateQuantity,
     required this.onRemove,
-  }) : super(key: key);
+  });
   
   @override
   Widget build(BuildContext context) {
@@ -260,7 +260,7 @@ class OrderItemWidget extends StatelessWidget {
 class OrderSummary extends StatelessWidget {
   final Order order;
   
-  const OrderSummary({Key? key, required this.order}) : super(key: key);
+  const OrderSummary({super.key, required this.order});
   
   @override
   Widget build(BuildContext context) {
@@ -311,11 +311,11 @@ class PriceSummaryRow extends StatelessWidget {
   final bool isBold;
 
   const PriceSummaryRow({
-    Key? key,
+    super.key,
     required this.title,
     required this.amount,
     this.isBold = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -346,7 +346,7 @@ class PriceSummaryRow extends StatelessWidget {
 class BottomActionBar extends ConsumerWidget {
   final Order order;
   
-  const BottomActionBar({Key? key, required this.order}) : super(key: key);
+  const BottomActionBar({super.key, required this.order});
   
   @override
   Widget build(BuildContext context, WidgetRef ref) {

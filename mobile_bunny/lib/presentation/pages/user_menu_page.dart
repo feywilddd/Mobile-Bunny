@@ -3,7 +3,6 @@ import '../pages/preferences_page.dart';
 import '../pages/restaurants_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
-import '../pages/login_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/custom_app_bar.dart';

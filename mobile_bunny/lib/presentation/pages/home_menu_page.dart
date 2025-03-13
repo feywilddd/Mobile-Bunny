@@ -7,12 +7,6 @@ import '../providers/filter_provider.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import '../widgets/category_section.dart';
-import '../pages/login_page.dart';
-import '../pages/category_menu_page.dart';
-import '../widgets/menu_item_card.dart';
-import '../pages/item_detail_bottom_sheet.dart';
-import '../pages/user_menu_page.dart';
-import '../pages/restaurants_page.dart';
 
 class MenuPage extends ConsumerStatefulWidget {
   const MenuPage({super.key});

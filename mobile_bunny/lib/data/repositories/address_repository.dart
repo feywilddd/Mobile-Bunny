@@ -135,7 +135,6 @@ class AddressRepository {
   try {
     // First check if the user document exists
     final userDoc = await _userDoc(userId).get();
-    
     if (!userDoc.exists) {
       // Create the user document if it doesn't exist
       await _userDoc(userId).set({

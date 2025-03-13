@@ -7,7 +7,9 @@ import '../pages/login_page.dart';
 import '../pages/user_menu_page.dart';
 
 class CustomAppBar extends ConsumerStatefulWidget implements PreferredSizeWidget {
-  const CustomAppBar({super.key});
+  final bool showArrow;
+  
+  const CustomAppBar({super.key, this.showArrow = false});
 
   @override
   ConsumerState<CustomAppBar> createState() => _CustomAppBarState();
@@ -136,15 +138,14 @@ class _CustomAppBarState extends ConsumerState<CustomAppBar> {
           ),
         ],
       ),
-      leading: IconButton(
-        icon: const Icon(
-          Icons.arrow_back,
-          color: Colors.white,
-        ),
-        onPressed: () {
-          Navigator.pop(context);
-        },
-      ),
+      leading: widget.showArrow
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            )
+          : null,
       actions: [
         GestureDetector(
           onTap: () {

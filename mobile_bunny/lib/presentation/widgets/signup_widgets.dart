@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:mobile_bunny/presentation/pages/login_page.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:io' show Platform;
 
 class SignupForm extends StatelessWidget {
   final TextEditingController emailController;
@@ -33,42 +35,43 @@ class SignupForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
         _buildLogo(),
-        const SizedBox(height: 36),
+        const SizedBox(height: 42),
         _buildEmailField(context),
         const SizedBox(height: 16),
         _buildPasswordField(context),
         const SizedBox(height: 16),
         _buildConfirmPasswordField(context),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
         _buildSignupButton(context),
         _buildDividerWithText(),
-        const SizedBox(height: 16),
-        _buildGoogleSignIn(context),
-        const SizedBox(height: 16),
         _buildLoginRedirect(context),
+        const SizedBox(height: 16),
       ],
     );
   }
 
   Widget _buildLogo() {
-    return const Center(
+    return Center(
       child: Column(
         children: [
-          Image(
-            image: AssetImage('assets/images/bunny_logo.png'),
+          CachedNetworkImage(
+            imageUrl: 'http://4.172.227.199/image_hosting/uploads/BunnyCOLogo.png',
+            placeholder: (context, url) => isIOS
+                ? const CupertinoActivityIndicator()
+                : const CircularProgressIndicator(),
+            errorWidget: (context, url, error) => const Icon(Icons.error),
             width: 80,
             height: 80,
-            color: Colors.white,
           ),
-          SizedBox(height: 8),
-          Text(
+          const SizedBox(height: 12),
+          const Text(
             'Bunny & co.',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -79,23 +82,27 @@ class SignupForm extends StatelessWidget {
   Widget _buildEmailField(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade800),
+        color: Colors.black.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade800.withOpacity(0.5)),
       ),
-      child: TextFormField(
-        controller: emailController,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: 'aaaa@exemple.com',
-          hintStyle: TextStyle(color: Colors.grey[600]),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          prefixIcon: const SizedBox(width: 10),
-          filled: true,
-          fillColor: Colors.transparent,
+      child: Material(
+        color: Colors.transparent,
+        child: TextFormField(
+          controller: emailController,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Email',
+            hintStyle: TextStyle(color: Colors.grey[500]),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            prefixIcon: Icon(Icons.email_outlined, color: Colors.grey[500], size: 20),
+            filled: true,
+            fillColor: Colors.transparent,
+          ),
+          keyboardType: TextInputType.emailAddress,
+          validator: _validateEmail,
         ),
-        validator: _validateEmail,
       ),
     );
   }
@@ -113,32 +120,36 @@ class SignupForm extends StatelessWidget {
   Widget _buildPasswordField(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade800),
+        color: Colors.black.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade800.withOpacity(0.5)),
       ),
-      child: TextFormField(
-        controller: passwordController,
-        obscureText: !isPasswordVisible,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: 'aaaa@exemple.com',
-          hintStyle: TextStyle(color: Colors.grey[600]),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          prefixIcon: const Icon(Icons.lock, color: Colors.grey, size: 20),
-          suffixIcon: IconButton(
-            icon: Icon(
-              isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-              color: Colors.grey[600],
-              size: 20,
+      child: Material(
+        color: Colors.transparent,
+        child: TextFormField(
+          controller: passwordController,
+          obscureText: !isPasswordVisible,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Mot de passe',
+            hintStyle: TextStyle(color: Colors.grey[500]),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500], size: 20),
+            suffixIcon: IconButton(
+              icon: Icon(
+                isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                color: Colors.grey[400],
+                size: 20,
+              ),
+              onPressed: onTogglePasswordVisibility,
+              splashRadius: 20,
             ),
-            onPressed: onTogglePasswordVisibility,
+            filled: true,
+            fillColor: Colors.transparent,
           ),
-          filled: true,
-          fillColor: Colors.transparent,
+          validator: _validatePassword,
         ),
-        validator: _validatePassword,
       ),
     );
   }
@@ -156,32 +167,36 @@ class SignupForm extends StatelessWidget {
   Widget _buildConfirmPasswordField(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade800),
+        color: Colors.black.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade800.withOpacity(0.5)),
       ),
-      child: TextFormField(
-        controller: confirmPasswordController,
-        obscureText: !isConfirmPasswordVisible,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: 'aaaa@exemple.com',
-          hintStyle: TextStyle(color: Colors.grey[600]),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          prefixIcon: const Icon(Icons.lock, color: Colors.grey, size: 20),
-          suffixIcon: IconButton(
-            icon: Icon(
-              isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
-              color: Colors.grey[600],
-              size: 20,
+      child: Material(
+        color: Colors.transparent,
+        child: TextFormField(
+          controller: confirmPasswordController,
+          obscureText: !isConfirmPasswordVisible,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Confirmer le mot de passe',
+            hintStyle: TextStyle(color: Colors.grey[500]),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500], size: 20),
+            suffixIcon: IconButton(
+              icon: Icon(
+                isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                color: Colors.grey[400],
+                size: 20,
+              ),
+              onPressed: onToggleConfirmPasswordVisibility,
+              splashRadius: 20,
             ),
-            onPressed: onToggleConfirmPasswordVisibility,
+            filled: true,
+            fillColor: Colors.transparent,
           ),
-          filled: true,
-          fillColor: Colors.transparent,
+          validator: _validateConfirmPassword,
         ),
-        validator: _validateConfirmPassword,
       ),
     );
   }
@@ -200,28 +215,30 @@ class SignupForm extends StatelessWidget {
     return ElevatedButton(
       onPressed: isLoading ? null : onSubmit,
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFFDB816E),
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        backgroundColor: const Color(0xFFDB816E).withOpacity(0.95),
+        padding: const EdgeInsets.symmetric(vertical: 15),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
         ),
-        minimumSize: const Size(double.infinity, 50),
+        minimumSize: const Size(double.infinity, 52),
+        elevation: 0.5,
       ),
       child: isLoading
           ? const SizedBox(
-              width: 20,
-              height: 20,
+              width: 22,
+              height: 22,
               child: CircularProgressIndicator(
                 color: Colors.white,
-                strokeWidth: 2,
+                strokeWidth: 2.5,
               ),
             )
           : const Text(
               'S\'inscrire',
               style: TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
                 color: Colors.white,
+                letterSpacing: 0.3,
               ),
             ),
     );
@@ -233,55 +250,27 @@ class SignupForm extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Divider(color: Colors.grey.shade800, thickness: 1),
+            child: Divider(color: Colors.grey.shade800.withOpacity(0.6), thickness: 0.8),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
               'ou',
-              style: TextStyle(color: Colors.grey.shade400),
+              style: TextStyle(
+                color: Colors.grey.shade500,
+                fontSize: 14,
+              ),
             ),
           ),
           Expanded(
-            child: Divider(color: Colors.grey.shade800, thickness: 1),
+            child: Divider(color: Colors.grey.shade800.withOpacity(0.6), thickness: 0.8),
           ),
         ],
       ),
     );
   }
   
-  Widget _buildGoogleSignIn(BuildContext context) {
-    return OutlinedButton(
-      onPressed: () {
-        // Add Google sign-in functionality
-      },
-      style: OutlinedButton.styleFrom(
-        side: BorderSide(color: Colors.grey.shade800),
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            'assets/images/google_logo.png',
-            height: 24,
-            width: 24,
-          ),
-          const SizedBox(width: 12),
-          const Text(
-            'Continuer avec Google',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildLoginRedirect(BuildContext context) {
     return Row(
@@ -289,7 +278,10 @@ class SignupForm extends StatelessWidget {
       children: [
         Text(
           'Déjà un compte?',
-          style: TextStyle(color: Colors.grey.shade400),
+          style: TextStyle(
+            color: Colors.grey.shade500,
+            fontSize: 13,
+          ),
         ),
         TextButton(
           onPressed: () {
@@ -299,13 +291,15 @@ class SignupForm extends StatelessWidget {
             );
           },
           style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            minimumSize: const Size(0, 32),
           ),
           child: const Text(
             'Se connecter',
             style: TextStyle(
               color: Colors.white,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
             ),
           ),
         ),

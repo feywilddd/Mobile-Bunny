@@ -104,11 +104,7 @@ class AddressCard extends ConsumerWidget {
                   '${selectedAddress.postalCode}, ${selectedAddress.city}',
                   style: const TextStyle(color: Colors.grey),
                 ),
-                if (selectedAddress.additionalInfo.isNotEmpty)
-                  Text(
-                    selectedAddress.additionalInfo,
-                    style: const TextStyle(color: Colors.grey),
-                  ),
+    
               ],
             ),
             trailing: TextButton(

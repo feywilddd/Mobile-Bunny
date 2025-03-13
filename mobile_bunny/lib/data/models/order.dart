@@ -67,27 +67,15 @@ class OrderItem {
 }
 
 enum OrderStatus {
-  draft, // Initial state, being built
-  pending, // Sent to restaurant but not confirmed
-  confirmed, // Restaurant confirmed order
-  preparing, // Food being prepared
-  readyForPickup, // Ready for delivery person
-  inDelivery, // On the way to customer
-  delivered, // Successfully delivered
-  cancelled, // Cancelled by customer, restaurant, or system
+  draft,    // Initial state, being built by customer
+  delivered // Order is complete, allowing new orders to be created
 }
 
 extension OrderStatusExtension on OrderStatus {
   String get name {
     switch (this) {
       case OrderStatus.draft: return 'Draft';
-      case OrderStatus.pending: return 'Pending';
-      case OrderStatus.confirmed: return 'Confirmed';
-      case OrderStatus.preparing: return 'Preparing';
-      case OrderStatus.readyForPickup: return 'Ready for Pickup';
-      case OrderStatus.inDelivery: return 'In Delivery';
       case OrderStatus.delivered: return 'Delivered';
-      case OrderStatus.cancelled: return 'Cancelled';
     }
   }
 }

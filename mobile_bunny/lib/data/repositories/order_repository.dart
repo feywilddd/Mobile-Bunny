@@ -87,7 +87,144 @@ class OrderRepository {
     });
   }
   
-  // Create a new order using selected restaurant and delivery address
+
+  // Update an existing order
+  Future<models.Order> updateOrder(models.Order updatedOrder) async {
+    final orderRef = _firestore.collection(_ordersCollection).doc(updatedOrder.id);
+    
+    await orderRef.update(updatedOrder.toMap());
+    
+    return updatedOrder;
+  }
+  
+  // Add an item to the active order
+  Future<models.Order?> addItemToOrder(MenuItem menuItem, {int quantity = 1}) async {
+    print("Adding item to order: ${menuItem.name}, quantity: $quantity");
+    
+    try {
+      // Get the active order
+      final activeOrder = await getActiveOrder();
+      
+      if (activeOrder == null) {
+        print("No active order found, creating one first");
+        // Create an order first, then add the item
+        final newOrder = await createOrder();
+        final updatedOrder = newOrder.addItem(menuItem, quantity: quantity);
+        return await updateOrder(updatedOrder);
+      }
+      
+      print("Adding item to existing order: ${activeOrder.id}");
+      final updatedOrder = activeOrder.addItem(menuItem, quantity: quantity);
+      return await updateOrder(updatedOrder);
+    } catch (e) {
+      print("Error adding item to order: $e");
+      rethrow;
+    }
+  }
+  
+  // Update item quantity in the active order
+  Future<models.Order?> updateItemQuantity(String menuItemId, int quantity) async {
+    final activeOrder = await getActiveOrder();
+    
+    if (activeOrder == null) {
+      throw Exception('No active order found.');
+    }
+    
+    final updatedOrder = activeOrder.updateItemQuantity(menuItemId, quantity);
+    return await updateOrder(updatedOrder);
+  }
+  
+  // Remove an item from the active order
+  Future<models.Order?> removeItem(String menuItemId) async {
+    final activeOrder = await getActiveOrder();
+    
+    if (activeOrder == null) {
+      throw Exception('No active order found.');
+    }
+    
+    final updatedOrder = activeOrder.removeItem(menuItemId);
+    return await updateOrder(updatedOrder);
+  }
+  // Cancel the active order
+  Future<void> cancelActiveOrder() async {
+    final activeOrder = await getActiveOrder();
+    
+    if (activeOrder == null) {
+      throw Exception('No active order found to cancel.');
+    }
+    
+    // Update status to cancelled
+    final cancelledOrder = activeOrder.updateStatus(models.OrderStatus.delivered);
+    await updateOrder(cancelledOrder);
+    
+    // Remove from active orders
+    await completeActiveOrder();
+  }
+  
+  // Get order history for the user
+  Future<List<models.Order>> getOrderHistory() async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(_ordersCollection)
+          .where('userId', isEqualTo: _userId)
+          .where('status', whereIn: [
+            models.OrderStatus.delivered.name
+          ])
+          .orderBy('createdAt', descending: true)
+          .get();
+      
+      return querySnapshot.docs
+          .map((doc) => models.Order.fromMap(doc.id, doc.data()))
+          .toList();
+    } catch (e) {
+      print('Error fetching order history: $e');
+      return [];
+    }
+  }
+  
+  // Check if a restaurant is selected
+  Future<bool> isRestaurantSelected() async {
+    final selectedRestaurantId = await _restaurantRepository.getSelectedRestaurantId();
+    return selectedRestaurantId != null;
+  }
+
+   Future<models.Order?> updateOrderStatus(models.OrderStatus newStatus) async {
+    final activeOrder = await getActiveOrder();
+    
+    if (activeOrder == null) {
+      throw Exception('No active order found.');
+    }
+    
+    final updatedOrder = activeOrder.updateStatus(newStatus);
+    return await updateOrder(updatedOrder);
+  }
+  
+  // Complete the active order (removes it from active to allow new orders)
+  Future<void> completeActiveOrder() async {
+    try {
+      final activeOrder = await getActiveOrder();
+      
+      if (activeOrder == null) {
+        print('No active order found to complete.');
+        return; // Just return instead of throwing an exception
+      }
+      
+      // Remove the active_order reference
+      await _activeOrderRef.delete();
+      
+      print('Active order completed successfully');
+    } catch (e) {
+      print('Error completing active order: $e');
+      rethrow;
+    }
+  }
+  
+  // Check if user has an active order
+  Future<bool> hasActiveOrder() async {
+    final activeOrder = await getActiveOrder();
+    return activeOrder != null;
+  }
+  
   Future<models.Order> createOrder() async {
     print("Creating order in Firestore with userId: $_userId");
     
@@ -173,134 +310,5 @@ class OrderRepository {
       print("Error creating order in Firestore: $e");
       rethrow;
     }
-  }
-  
-  // Update an existing order
-  Future<models.Order> updateOrder(models.Order updatedOrder) async {
-    final orderRef = _firestore.collection(_ordersCollection).doc(updatedOrder.id);
-    
-    await orderRef.update(updatedOrder.toMap());
-    
-    return updatedOrder;
-  }
-  
-  // Add an item to the active order
-  Future<models.Order?> addItemToOrder(MenuItem menuItem, {int quantity = 1}) async {
-    print("Adding item to order: ${menuItem.name}, quantity: $quantity");
-    
-    try {
-      // Get the active order
-      final activeOrder = await getActiveOrder();
-      
-      if (activeOrder == null) {
-        print("No active order found, creating one first");
-        // Create an order first, then add the item
-        final newOrder = await createOrder();
-        final updatedOrder = newOrder.addItem(menuItem, quantity: quantity);
-        return await updateOrder(updatedOrder);
-      }
-      
-      print("Adding item to existing order: ${activeOrder.id}");
-      final updatedOrder = activeOrder.addItem(menuItem, quantity: quantity);
-      return await updateOrder(updatedOrder);
-    } catch (e) {
-      print("Error adding item to order: $e");
-      rethrow;
-    }
-  }
-  
-  // Update item quantity in the active order
-  Future<models.Order?> updateItemQuantity(String menuItemId, int quantity) async {
-    final activeOrder = await getActiveOrder();
-    
-    if (activeOrder == null) {
-      throw Exception('No active order found.');
-    }
-    
-    final updatedOrder = activeOrder.updateItemQuantity(menuItemId, quantity);
-    return await updateOrder(updatedOrder);
-  }
-  
-  // Remove an item from the active order
-  Future<models.Order?> removeItem(String menuItemId) async {
-    final activeOrder = await getActiveOrder();
-    
-    if (activeOrder == null) {
-      throw Exception('No active order found.');
-    }
-    
-    final updatedOrder = activeOrder.removeItem(menuItemId);
-    return await updateOrder(updatedOrder);
-  }
-  
-  // Update order status
-  Future<models.Order?> updateOrderStatus(models.OrderStatus newStatus) async {
-    final activeOrder = await getActiveOrder();
-    
-    if (activeOrder == null) {
-      throw Exception('No active order found.');
-    }
-    
-    final updatedOrder = activeOrder.updateStatus(newStatus);
-    return await updateOrder(updatedOrder);
-  }
-  
-  // Complete the active order (moves it from active to history)
-  // This happens when the order is delivered or cancelled
-  Future<void> completeActiveOrder() async {
-    final activeOrder = await getActiveOrder();
-    
-    if (activeOrder == null) {
-      throw Exception('No active order found to complete.');
-    }
-    
-    // Remove the active_order reference in a transaction
-    await _firestore.runTransaction((transaction) async {
-      transaction.delete(_activeOrderRef);
-    });
-  }
-  
-  // Cancel the active order
-  Future<void> cancelActiveOrder() async {
-    final activeOrder = await getActiveOrder();
-    
-    if (activeOrder == null) {
-      throw Exception('No active order found to cancel.');
-    }
-    
-    // Update status to cancelled
-    final cancelledOrder = activeOrder.updateStatus(models.OrderStatus.cancelled);
-    await updateOrder(cancelledOrder);
-    
-    // Remove from active orders
-    await completeActiveOrder();
-  }
-  
-  // Get order history for the user
-  Future<List<models.Order>> getOrderHistory() async {
-    try {
-      final querySnapshot = await _firestore
-          .collection(_ordersCollection)
-          .where('userId', isEqualTo: _userId)
-          .where('status', whereIn: [
-            models.OrderStatus.delivered.name,
-            models.OrderStatus.cancelled.name,
-          ])
-          .orderBy('createdAt', descending: true)
-          .get();
-      
-      return querySnapshot.docs
-          .map((doc) => models.Order.fromMap(doc.id, doc.data()))
-          .toList();
-    } catch (e) {
-      print('Error fetching order history: $e');
-      return [];
-    }
-  }
-  
-  // Check if a restaurant is selected
-  Future<bool> isRestaurantSelected() async {
-    final selectedRestaurantId = await _restaurantRepository.getSelectedRestaurantId();
-    return selectedRestaurantId != null;
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/auth_provider.dart';
+import '../providers/restaurant_provider.dart';
 import '../pages/login_page.dart';
 import '../pages/user_menu_page.dart';
 
@@ -123,18 +124,31 @@ class _CustomAppBarState extends ConsumerState<CustomAppBar> {
         children: [
           const Icon(Icons.location_on, color: Color(0xFFDE0000)),
           const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                '123 Rue du Resto...',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              Text(
-                'Ouvert jusqu\'à 23 h',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
+          Consumer(
+            builder: (context, ref, child) {
+              final restaurant = ref.watch(selectedRestaurantProvider);
+              if (restaurant == null) {
+                return const Text(
+                  'Aucun restaurant sélectionné',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                );
+              }
+
+              final isOpen = restaurant.isOpen;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    restaurant.address,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  Text(
+                    isOpen ? 'Ouvert jusqu\'à ${restaurant.closingTime}' : 'Fermé - Ouvre à ${restaurant.openingTime}',
+                    style: TextStyle(fontSize: 12, color: isOpen ? Colors.green : Colors.red),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

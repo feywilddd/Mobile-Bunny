@@ -120,7 +120,7 @@ class _UserMenuPageState extends ConsumerState<UserMenuPage> {
     final user = ref.watch(authProvider);
     
     return Scaffold(
-      appBar: const CustomAppBar(),
+      appBar: const CustomAppBar(showArrow: true),
       backgroundColor: const Color(0xFF212529),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

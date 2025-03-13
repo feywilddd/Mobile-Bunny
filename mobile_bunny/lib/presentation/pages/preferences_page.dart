@@ -64,7 +64,7 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
     if (user == null) {
       // Handle not logged in state
       return Scaffold(
-        appBar: const CustomAppBar(),
+        appBar: const CustomAppBar(showArrow: true),
         backgroundColor: const Color(0xFF212529),
         body: Center(
           child: Column(
@@ -119,7 +119,7 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
                         restaurantState.error;
     
     return Scaffold(
-      appBar: const CustomAppBar(),
+      appBar: const CustomAppBar(showArrow: true),
       backgroundColor: const Color(0xFF212529),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

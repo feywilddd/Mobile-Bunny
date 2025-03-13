@@ -22,7 +22,7 @@ class CategoryPage extends ConsumerWidget {
     ref.watch(allergenRefreshProvider);
     
     return Scaffold(
-      appBar: const CustomAppBar(),
+      appBar: const CustomAppBar(showArrow: true),
       bottomNavigationBar: const CustomBottomNavigationBar(),
       backgroundColor: const Color(0xFF212529),
       body: menuAsyncValue.when(

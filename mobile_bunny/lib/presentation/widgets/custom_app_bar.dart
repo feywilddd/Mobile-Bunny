@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mobile_bunny/data/models/restaurant.dart';
+import 'dart:io' show Platform;
 import '../providers/auth_provider.dart';
 import '../providers/restaurant_provider.dart';
 import '../pages/login_page.dart';
@@ -27,19 +28,18 @@ class _CustomAppBarState extends ConsumerState<CustomAppBar> {
   @override
   void initState() {
     super.initState();
-    // Fetch initials after first frame is built
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchProfileInitials();
     });
   }
-  
-  // Listen for auth changes and update initials accordingly
+ 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final user = ref.watch(authProvider);
     
-    // When user changes, update initials
+
     if (user != null && !isLoading) {
       _fetchProfileInitials();
     }
@@ -52,7 +52,7 @@ class _CustomAppBarState extends ConsumerState<CustomAppBar> {
     setState(() => isLoading = true);
     
     try {
-      // Try to get user profiles from Firestore
+
       final snapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -72,7 +72,7 @@ class _CustomAppBarState extends ConsumerState<CustomAppBar> {
           });
         }
       } else {
-        // Try to get from user document
+  
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
@@ -95,7 +95,7 @@ class _CustomAppBarState extends ConsumerState<CustomAppBar> {
       print('Error fetching profile initials: $e');
       if (mounted) {
         setState(() {
-          // Fallback to Firebase user display name or email
+        
           mainProfileInitials = _getInitials(user.displayName ?? user.email?.split('@')[0] ?? 'U');
           isLoading = false;
         });
@@ -121,115 +121,128 @@ class _CustomAppBarState extends ConsumerState<CustomAppBar> {
   Widget build(BuildContext context) {
     return AppBar(
       backgroundColor: const Color(0xFF1C1C1C),
-      title: Row(
-        children: [
-          const Icon(Icons.location_on, color: Color(0xFFDE0000)),
-          const SizedBox(width: 8),
-          Consumer(
-            builder: (context, ref, child) {
-              final restaurantState = ref.watch(restaurantProvider);
-              final selectedId = restaurantState.selectedRestaurantId;
-              
-              if (selectedId == null) {
-                return const Text(
-                  'Aucun restaurant sélectionné',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                );
-              }
-              
-              // Since we know the ID exists but the restaurant isn't in the list,
-              // fetch it directly from Firestore every time
-              return FutureBuilder<DocumentSnapshot>(
-                future: FirebaseFirestore.instance
-                    .collection('Restaurants')
-                    .doc(selectedId)
-                    .get(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+      title: Flexible(
+        child: Row(
+          children: [
+            const Icon(Icons.location_on, color: Color(0xFFDE0000)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Consumer(
+                builder: (context, ref, child) {
+                  final restaurantState = ref.watch(restaurantProvider);
+                  final selectedId = restaurantState.selectedRestaurantId;
+                  
+                  if (selectedId == null) {
                     return const Text(
-                      'Chargement...',
-                      style: TextStyle(fontSize: 16, color: Colors.white),
+                      'Aucun restaurant sélectionné',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      overflow: TextOverflow.ellipsis,
                     );
                   }
-                  
-                  if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.exists) {
-                    return const Text(
-                      'Restaurant non disponible',
-                      style: TextStyle(fontSize: 16, color: Colors.white),
-                    );
-                  }
-                  
-                  final data = snapshot.data!.data() as Map<String, dynamic>?;
-                  if (data == null) {
-                    return const Text(
-                      'Données non disponibles',
-                      style: TextStyle(fontSize: 16, color: Colors.white),
-                    );
-                  }
-                  
-                  final String fullAddress = data['address'] ?? 'Adresse inconnue';
-                  final String address = fullAddress.length > 25 
-                      ? '${fullAddress.substring(0, 22)}...' 
-                      : fullAddress;
-                  
-                  // Get the opening and closing times from Firestore
-final openingTimeRaw = data['opening_time'];
-final closingTimeRaw = data['closing_time'];
+             
+                  return FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('Restaurants')
+                        .doc(selectedId)
+                        .get(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Text(
+                          'Chargement...',
+                          style: TextStyle(fontSize: 16, color: Colors.white),
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      }
+                      
+                      if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.exists) {
+                        return const Text(
+                          'Restaurant non disponible',
+                          style: TextStyle(fontSize: 16, color: Colors.white),
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      }
+                      
+                      final data = snapshot.data!.data() as Map<String, dynamic>?;
+                      if (data == null) {
+                        return const Text(
+                          'Données non disponibles',
+                          style: TextStyle(fontSize: 16, color: Colors.white),
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      }
+                      
+                      final String fullAddress = data['address'] ?? 'Adresse inconnue';
+                      final String address = fullAddress.length > 20 
+                          ? '${fullAddress.substring(0, 17)}...' 
+                          : fullAddress;
+                     
+                      final openingTimeRaw = data['opening_time'];
+                      final closingTimeRaw = data['closing_time'];
 
-// Format the times and determine if the restaurant is currently open
-String openingTime = 'N/A';
-String closingTime = 'N/A';
-bool isOpen = false;
+                      String openingTime = 'N/A';
+                      String closingTime = 'N/A';
+                      bool isOpen = false;
 
-try {
-  if (openingTimeRaw is Timestamp && closingTimeRaw is Timestamp) {
-    // Convert Timestamps to DateTime objects
-    final opening = openingTimeRaw.toDate();
-    final closing = closingTimeRaw.toDate();
-    
-    // Format times for display
-    openingTime = '${opening.hour}:${opening.minute.toString().padLeft(2, '0')}';
-    closingTime = '${closing.hour}:${closing.minute.toString().padLeft(2, '0')}';
-    
-    // Get current time
-    final now = DateTime.now();
-    final currentTimeOfDay = DateTime(
-      opening.year, 
-      opening.month, 
-      opening.day, 
-      now.hour, 
-      now.minute
-    );
-    
-    // Determine if restaurant is open (compare only hours and minutes)
-    isOpen = currentTimeOfDay.isAfter(opening) && currentTimeOfDay.isBefore(closing);
-  }
-} catch (e) {
-  print('Error determining open status: $e');
-}
-                  
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        address,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                      Text(
-                        isOpen ? 'Ouvert jusqu\'à $closingTime' : 'Fermé - Ouvre à $openingTime',
-                        style: TextStyle(fontSize: 12, color: isOpen ? Colors.green : Colors.red),
-                      ),
-                    ],
+                      try {
+                        if (openingTimeRaw is Timestamp && closingTimeRaw is Timestamp) {
+                   
+                          final opening = openingTimeRaw.toDate();
+                          final closing = closingTimeRaw.toDate();
+                          
+                         
+                          openingTime = '${opening.hour}:${opening.minute.toString().padLeft(2, '0')}';
+                          closingTime = '${closing.hour}:${closing.minute.toString().padLeft(2, '0')}';
+                          
+                
+                          final now = DateTime.now();
+                    
+                          final currentHour = now.hour;
+                          final currentMinute = now.minute;
+                          
+                   
+                          final isAfterOpening = currentHour > opening.hour || 
+                                              (currentHour == opening.hour && currentMinute >= opening.minute);
+                          
+                          final isBeforeClosing = currentHour < closing.hour || 
+                                               (currentHour == closing.hour && currentMinute <= closing.minute);
+                          
+                        
+                          isOpen = isAfterOpening && isBeforeClosing;
+                        }
+                      } catch (e) {
+                        print('Error determining open status: $e');
+                      }
+                      
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            address,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            isOpen ? 'Ouvert jusqu\'à $closingTime' : 'Fermé - Ouvre à $openingTime',
+                            style: TextStyle(fontSize: 12, color: isOpen ? Colors.green : Colors.red),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      );
+                    },
                   );
                 },
-              );
-            },
-          ),
-        ],
+              ),
+            ),
+          ],
+        ),
       ),
       leading: widget.showArrow
           ? IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              icon: Icon(
+                Platform.isIOS ? CupertinoIcons.back : Icons.arrow_back,
+                color: Colors.white
+              ),
               onPressed: () {
                 Navigator.pop(context);
               },
@@ -240,35 +253,113 @@ try {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const UserMenuPage()),
+              Platform.isIOS
+                ? CupertinoPageRoute(builder: (context) => const UserMenuPage())
+                : MaterialPageRoute(builder: (context) => const UserMenuPage()),
             ).then((_) {
-              // Refresh initials when returning from UserMenuPage
+              
               _fetchProfileInitials();
             });
           },
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: isLoading
-              ? const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE4DF96)),
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE4DF96)),
+                    strokeWidth: 2.0,
+                  ),
                 )
               : CircleAvatar(
                   backgroundColor: const Color(0xFFE4DF96),
-                  child: Text(mainProfileInitials ?? '?'),
+                  radius: 16,
+                  child: Text(
+                    mainProfileInitials ?? '?',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1C1C1C),
+                    ),
+                  ),
                 ),
           ),
         ),
         IconButton(
-          icon: const Icon(Icons.logout),
+          icon: Icon(
+            Platform.isIOS ? CupertinoIcons.square_arrow_right : Icons.logout,
+            color: Colors.white,
+          ),
           onPressed: () async {
-            await ref.read(authProvider.notifier).signOut();
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginPage()),
-            );
+            // Show confirmation dialog using appropriate platform style
+            bool confirm = await _showLogoutConfirmationDialog(context);
+            if (confirm) {
+              await ref.read(authProvider.notifier).signOut();
+              Navigator.pushReplacement(
+                context,
+                Platform.isIOS
+                  ? CupertinoPageRoute(builder: (context) => const LoginPage())
+                  : MaterialPageRoute(builder: (context) => const LoginPage()),
+              );
+            }
           },
         ),
       ],
     );
+  }
+  
+  Future<bool> _showLogoutConfirmationDialog(BuildContext context) async {
+    if (Platform.isIOS) {
+      return await showCupertinoDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return CupertinoAlertDialog(
+            title: const Text('Déconnexion'),
+            content: const Text('Êtes-vous sûr de vouloir vous déconnecter?'),
+            actions: <Widget>[
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('Annuler'),
+                onPressed: () {
+                  Navigator.of(context).pop(false);
+                },
+              ),
+              CupertinoDialogAction(
+                isDestructiveAction: true,
+                child: const Text('Déconnecter'),
+                onPressed: () {
+                  Navigator.of(context).pop(true);
+                },
+              ),
+            ],
+          );
+        },
+      ) ?? false;
+    } else {
+      return await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Déconnexion'),
+            content: const Text('Êtes-vous sûr de vouloir vous déconnecter?'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('Annuler'),
+                onPressed: () {
+                  Navigator.of(context).pop(false);
+                },
+              ),
+              TextButton(
+                child: const Text('Déconnecter', style: TextStyle(color: Colors.red)),
+                onPressed: () {
+                  Navigator.of(context).pop(true);
+                },
+              ),
+            ],
+          );
+        },
+      ) ?? false;
+    }
   }
 }

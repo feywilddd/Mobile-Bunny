@@ -12,9 +12,9 @@ class MenuItemWithCart extends ConsumerWidget {
   final MenuItem menuItem;
   
   const MenuItemWithCart({
-    Key? key,
+    super.key,
     required this.menuItem,
-  }) : super(key: key);
+  });
   
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -169,9 +169,9 @@ class CartBadge extends ConsumerWidget {
   final VoidCallback onTap;
   
   const CartBadge({
-    Key? key,
+    super.key,
     required this.onTap,
-  }) : super(key: key);
+  });
   
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -219,9 +219,9 @@ class AppBarWithCart extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   
   const AppBarWithCart({
-    Key? key,
+    super.key,
     this.title = 'Restaurant App',
-  }) : super(key: key);
+  });
   
   @override
   Widget build(BuildContext context) {

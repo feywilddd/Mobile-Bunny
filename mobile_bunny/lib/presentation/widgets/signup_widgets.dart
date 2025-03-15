@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:mobile_bunny/presentation/pages/login_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'dart:io' show Platform;
+import 'package:mobile_bunny/presentation/pages/login_page.dart';
 
 class SignupForm extends StatelessWidget {
   final TextEditingController emailController;
@@ -17,7 +16,7 @@ class SignupForm extends StatelessWidget {
   final bool isIOS;
 
   const SignupForm({
-    Key? key,
+    super.key,
     required this.emailController,
     required this.passwordController,
     required this.confirmPasswordController,
@@ -28,83 +27,74 @@ class SignupForm extends StatelessWidget {
     required this.onTogglePasswordVisibility,
     required this.onToggleConfirmPasswordVisibility,
     required this.isIOS,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 32),
+        const SizedBox(height: 48),
         _buildLogo(),
-        const SizedBox(height: 42),
+        const SizedBox(height: 48),
         _buildEmailField(context),
         const SizedBox(height: 16),
         _buildPasswordField(context),
         const SizedBox(height: 16),
         _buildConfirmPasswordField(context),
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
         _buildSignupButton(context),
-        _buildDividerWithText(),
+        const SizedBox(height: 24),
         _buildLoginRedirect(context),
-        const SizedBox(height: 16),
       ],
     );
   }
 
   Widget _buildLogo() {
     return Center(
-      child: Column(
-        children: [
-          CachedNetworkImage(
-            imageUrl: 'http://4.172.227.199/image_hosting/uploads/BunnyCOLogo.png',
-            placeholder: (context, url) => isIOS
-                ? const CupertinoActivityIndicator()
-                : const CircularProgressIndicator(),
-            errorWidget: (context, url, error) => const Icon(Icons.error),
-            width: 80,
-            height: 80,
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Bunny & co.',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+      child: CachedNetworkImage(
+        imageUrl: 'http://4.172.227.199/image_hosting/uploads/BunnyCOLogo.png',
+        placeholder: (context, url) => isIOS
+            ? const CupertinoActivityIndicator()
+            : const CircularProgressIndicator(),
+        errorWidget: (context, url, error) => const Icon(Icons.error),
+        width: 120,
+        height: 120,
       ),
     );
   }
 
   Widget _buildEmailField(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade800.withOpacity(0.5)),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: TextFormField(
-          controller: emailController,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'Email',
-            hintStyle: TextStyle(color: Colors.grey[500]),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            prefixIcon: Icon(Icons.email_outlined, color: Colors.grey[500], size: 20),
-            filled: true,
-            fillColor: Colors.transparent,
-          ),
-          keyboardType: TextInputType.emailAddress,
-          validator: _validateEmail,
+    if (isIOS) {
+      return CupertinoTextField(
+        controller: emailController,
+        placeholder: 'aaaa@exemple.com',
+        placeholderStyle: TextStyle(color: Colors.grey[600]),
+        style: const TextStyle(color: Colors.white),
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: BorderRadius.circular(12),
         ),
-      ),
-    );
+        padding: const EdgeInsets.all(16),
+      );
+    } else {
+      return TextFormField(
+        controller: emailController,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: 'aaaa@exemple.com',
+          hintStyle: TextStyle(color: Colors.grey[600]),
+          filled: true,
+          fillColor: Colors.grey[900],
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.all(16),
+        ),
+        validator: _validateEmail,
+      );
+    }
   }
 
   String? _validateEmail(String? value) {
@@ -118,40 +108,55 @@ class SignupForm extends StatelessWidget {
   }
 
   Widget _buildPasswordField(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade800.withOpacity(0.5)),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: TextFormField(
-          controller: passwordController,
-          obscureText: !isPasswordVisible,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'Mot de passe',
-            hintStyle: TextStyle(color: Colors.grey[500]),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500], size: 20),
-            suffixIcon: IconButton(
-              icon: Icon(
-                isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                color: Colors.grey[400],
-                size: 20,
-              ),
-              onPressed: onTogglePasswordVisibility,
-              splashRadius: 20,
-            ),
-            filled: true,
-            fillColor: Colors.transparent,
-          ),
-          validator: _validatePassword,
+    if (isIOS) {
+      return CupertinoTextField(
+        controller: passwordController,
+        placeholder: 'Mot de passe',
+        placeholderStyle: TextStyle(color: Colors.grey[600]),
+        style: const TextStyle(color: Colors.white),
+        obscureText: !isPasswordVisible,
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: BorderRadius.circular(12),
         ),
-      ),
-    );
+        padding: const EdgeInsets.all(16),
+        suffix: GestureDetector(
+          onTap: onTogglePasswordVisibility,
+          child: Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Icon(
+              isPasswordVisible ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
+              color: Colors.grey[600],
+            ),
+          ),
+        ),
+      );
+    } else {
+      return TextFormField(
+        controller: passwordController,
+        obscureText: !isPasswordVisible,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: 'Mot de passe',
+          hintStyle: TextStyle(color: Colors.grey[600]),
+          filled: true,
+          fillColor: Colors.grey[900],
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.all(16),
+          suffixIcon: IconButton(
+            icon: Icon(
+              isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+              color: Colors.grey[600],
+            ),
+            onPressed: onTogglePasswordVisibility,
+          ),
+        ),
+        validator: _validatePassword,
+      );
+    }
   }
 
   String? _validatePassword(String? value) {
@@ -165,40 +170,55 @@ class SignupForm extends StatelessWidget {
   }
 
   Widget _buildConfirmPasswordField(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade800.withOpacity(0.5)),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: TextFormField(
-          controller: confirmPasswordController,
-          obscureText: !isConfirmPasswordVisible,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'Confirmer le mot de passe',
-            hintStyle: TextStyle(color: Colors.grey[500]),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500], size: 20),
-            suffixIcon: IconButton(
-              icon: Icon(
-                isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                color: Colors.grey[400],
-                size: 20,
-              ),
-              onPressed: onToggleConfirmPasswordVisibility,
-              splashRadius: 20,
-            ),
-            filled: true,
-            fillColor: Colors.transparent,
-          ),
-          validator: _validateConfirmPassword,
+    if (isIOS) {
+      return CupertinoTextField(
+        controller: confirmPasswordController,
+        placeholder: 'Confirmez le mot de passe',
+        placeholderStyle: TextStyle(color: Colors.grey[600]),
+        style: const TextStyle(color: Colors.white),
+        obscureText: !isConfirmPasswordVisible,
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: BorderRadius.circular(12),
         ),
-      ),
-    );
+        padding: const EdgeInsets.all(16),
+        suffix: GestureDetector(
+          onTap: onToggleConfirmPasswordVisibility,
+          child: Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Icon(
+              isConfirmPasswordVisible ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
+              color: Colors.grey[600],
+            ),
+          ),
+        ),
+      );
+    } else {
+      return TextFormField(
+        controller: confirmPasswordController,
+        obscureText: !isConfirmPasswordVisible,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: 'Confirmez le mot de passe',
+          hintStyle: TextStyle(color: Colors.grey[600]),
+          filled: true,
+          fillColor: Colors.grey[900],
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.all(16),
+          suffixIcon: IconButton(
+            icon: Icon(
+              isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
+              color: Colors.grey[600],
+            ),
+            onPressed: onToggleConfirmPasswordVisibility,
+          ),
+        ),
+        validator: _validateConfirmPassword,
+      );
+    }
   }
 
   String? _validateConfirmPassword(String? value) {
@@ -212,98 +232,86 @@ class SignupForm extends StatelessWidget {
   }
 
   Widget _buildSignupButton(BuildContext context) {
-    return ElevatedButton(
-      onPressed: isLoading ? null : onSubmit,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFFDB816E).withOpacity(0.95),
-        padding: const EdgeInsets.symmetric(vertical: 15),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+    if (isIOS) {
+      return CupertinoButton(
+        onPressed: isLoading ? null : onSubmit,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        color: const Color(0xFFDB816E),
+        borderRadius: BorderRadius.circular(12),
+        child: isLoading
+            ? const CupertinoActivityIndicator(color: Colors.white)
+            : const Text(
+                'S\'inscrire',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+      );
+    } else {
+      return ElevatedButton(
+        onPressed: isLoading ? null : onSubmit,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFDB816E),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        minimumSize: const Size(double.infinity, 52),
-        elevation: 0.5,
-      ),
-      child: isLoading
-          ? const SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2.5,
+        child: isLoading
+            ? const CircularProgressIndicator(color: Colors.white)
+            : const Text(
+                'S\'inscrire',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-            )
-          : const Text(
-              'S\'inscrire',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-                letterSpacing: 0.3,
-              ),
-            ),
-    );
+      );
+    }
   }
-  
-  Widget _buildDividerWithText() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Row(
-        children: [
-          Expanded(
-            child: Divider(color: Colors.grey.shade800.withOpacity(0.6), thickness: 0.8),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'ou',
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Divider(color: Colors.grey.shade800.withOpacity(0.6), thickness: 0.8),
-          ),
-        ],
-      ),
-    );
-  }
-  
-
 
   Widget _buildLoginRedirect(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Déjà un compte?',
-          style: TextStyle(
-            color: Colors.grey.shade500,
-            fontSize: 13,
-          ),
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Text(
+        'Déjà un compte ?',
+        style: TextStyle(
+          color: Color(0xFFBDBDBD), 
+          fontSize: 12,
+          decoration: TextDecoration.none, // Remove the const to add this property
         ),
-        TextButton(
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginPage()),
-            );
-          },
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            minimumSize: const Size(0, 32),
-          ),
-          child: const Text(
-            'Se connecter',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
+      ),
+      isIOS
+          ? CupertinoButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              },
+              padding: EdgeInsets.zero,
+              child: const Text(
+                'Se connecter',
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            )
+          : TextButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              },
+              child: const Text(
+                'Se connecter',
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
             ),
-          ),
-        ),
-      ],
-    );
-  }
+    ],
+  );
+}
 }

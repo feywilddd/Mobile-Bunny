@@ -21,6 +21,8 @@ void main() async {
   // Initialize Firebase only once
    await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+    name: 'mobilebunny-a46b2'
+
     
   );
 
